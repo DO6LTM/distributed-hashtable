@@ -1,6 +1,43 @@
 ListNode {
 	node left;
 	node right;
+	
+	float hash_value;
+	int[] r;
+	int R_LENGTH = 64;
+
+	/* Konstruktor */
+	init() {
+		/* Hashen, Bitrepräs. */
+		hash_value = g(this);
+		
+		/* Hashwert als Bitstring abspeichern */
+		float tmp = hash_value;
+		int i;
+		float res;
+		for (i = 0; i < R_LENGTH; i++) {
+			res = tmp * 2.0;
+			print(tmp);
+			if (res > 1) {
+				r >> 1;
+				tmp = res - 1.0;
+			}
+			else if (res < 1) {
+				r >> 0;
+				tmp = res;
+			}
+		}
+		while (length(r) < R_LENGTH) {
+			r >> 0;
+		}
+	}
+	
+	/* Hashfunktion g, bildet node I auf [0,1) ab */
+	g float(node I) {
+		float i = hash(I);
+		i = i / MAX_INTEGER;
+		return i;
+	}
 
 	entry(node C) {
 		linearize(C);
