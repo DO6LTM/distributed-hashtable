@@ -2,43 +2,67 @@ ListNode {
 	node left;
 	node right;
 	
-	float hash_value;
-	int[] r;
-	int R_LENGTH = 64;
-
+	float hash_value; /* Hashwert von this */
+	int[] r; /* Bitstring von hash_value */
+	int R_LENGTH = 64; /* Länge von r */
+	
 	/* Konstruktor */
 	init() {
 		/* Hashen, Bitrepräs. */
-		hash_value = g(this);
+		hash_value = g(id(this));
 		
-		/* Hashwert als Bitstring abspeichern */
-		float tmp = hash_value;
+		floatToBitstring(hash_value, R_LENGTH, r);
+	}
+	
+	/* Hashwert F als Bitstring der Länge L in A schreiben */
+	floatToBitstring(float F, int L, int[] A) {
+		A <<<<;
+		float tmp = F;
 		int i;
 		float res;
-		for (i = 0; i < R_LENGTH; i++) {
+		for (i = 0; i < L; i++) {
 			res = tmp * 2.0;
-			print(tmp);
 			if (res > 1) {
-				r >> 1;
+				A >> 1;
 				tmp = res - 1.0;
 			}
 			else if (res < 1) {
-				r >> 0;
+				A >> 0;
 				tmp = res;
 			}
 		}
-		while (length(r) < R_LENGTH) {
-			r >> 0;
+		while (length(A) < L) {
+			A >> 0;
 		}
 	}
 	
-	/* Hashfunktion g, bildet node I auf [0,1) ab */
-	g float(node I) {
+	/* Schreibt die ersten I Bits von r(V) in A */
+	prefix(int I, node V, int[] A) {
+		int[] tmp;
+		floatToBitstring(g(id(V)), R_LENGTH, tmp);
+		A <<<<;
+		int i;
+		for (i = 0; i < I; i++) {
+			A >> tmp[i];
+		}
+	}
+	
+	/* Gibt den nächsten Nachfolger von V zurück mit prefix_i(V)*B */
+	succ node(int I, node V, int B, int[] A) {
+		int[] pref;
+		prefix(I, V, pref);
+		pref >> B;
+		/* TODO Nachfolger suchen */
+	}
+	
+	/* Hashfunktion g, bildet I auf [0,1) ab */
+	g float(int I) {
 		float i = hash(I);
 		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
 		return i;
 	}
-
+	
 	entry(node C) {
 		linearize(C);
 	}
@@ -46,14 +70,14 @@ ListNode {
 	timeout() {
 		/* 1a TODO linearisiere */
 		/* 1b TODO überbrücke */
-		if (left != null & id(left) < id(this)) {
+		if (left != null & g(id(left)) < hash_value) {
 			left -> linearize(this);
 		}
 		else{
 			this -> linearize(left);
 			left = null;
 		}
-		if (right != null & id(right)>id(this)) {
+		if (right != null & g(id(right)) > hash_value) {
 			right -> linearize(this);
 		}
 		else{
@@ -64,12 +88,12 @@ ListNode {
 
 	linearize(node V) {
 		/* 2 TODO linearisiere */
-		if (id(V)<id(this)) {
+		if (g(id(V)) < hash_value) {
 			if (left == null) {
 				left = V;
 			}
 			else {
-				if (id(left) < id(V)) {
+				if (g(id(left)) < g(id(V))) {
 					V -> linearize(left);
 					left = V;
 				}
@@ -78,12 +102,12 @@ ListNode {
 				}
 			}
 		}
-		else if(id(V) > id(this)) {
+		else if(g(id(V)) > hash_value) {
 			if (right == null) {
 				right = V;
 			}
 			else {
-				if(id(right) > id(V)) {
+				if(g(id(right)) > g(id(V))) {
 					V -> linearize(right);
 					right = V;
 				}
@@ -91,7 +115,6 @@ ListNode {
 					right -> linearize(V);
 				}
 			}
-			
 		}
 	}
 } 
