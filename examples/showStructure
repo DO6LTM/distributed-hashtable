@@ -1,0 +1,9 @@
+/* to check, if structrure is build the right way in simulation */
+Sample {
+	node <> neighbors;
+	entry(node C){
+		if (C != null){
+			neighbors>>C;
+		}
+	}
+}

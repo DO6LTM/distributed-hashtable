@@ -1,0 +1,41 @@
+gridNode{
+	/* Quadratwurzel der Gesamtzahl aller Knoten */
+	int size = 5;
+	node top; node left; node bottom; node right;
+	int x_this; int y_this;
+	init(){
+		x_this=(id(this)-1)/size; y_this=(id(this)-1)%size;
+	}
+	entry(node n){
+		int x_n=(id(n)-1)/size; int y_n=(id(n)-1)%size;
+
+		if (x_n == x_this+1 & y_n == y_this) right=n;
+		if (x_n == x_this & y_n == y_this+1) top=n;
+		if (x_n == x_this-1 & y_n == y_this) left=n;
+		if (x_n == x_this & y_n == y_this-1) bottom=n;
+	}
+	message (string text, int to_id){
+		int x_n=(to_id-1)/size; int y_n=(to_id-1)%size;
+
+		if (x_this != x_n) {
+		    if (x_n < x_this)
+					left -> message(text, to_id);
+		    else
+					right -> message(text, to_id);
+		} else {
+		    if (y_n < y_this)
+					bottom -> message(text, to_id);
+		    if (y_n > y_this)
+					top -> message(text, to_id);
+		    if (y_n == y_this)
+					print("Message " + text + " received.");
+		}
+		mark(true);
+	}
+	/* um bei allen Knoten die Markierung zu entfernen.
+	Sollte auf Knoten Nr. 1 ausgeführt werden. */
+	unmark(){
+		mark(false);
+		right->unmark(); top->unmark();
+	}
+}

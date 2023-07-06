@@ -1,0 +1,30 @@
+/* simple broadcast with central server */
+Server { node [] clients;
+	entry(node C){
+		int i;
+		/* check to not have duplicate entries */
+		for(i=0;i<length(clients);i++){
+			if(clients[i]==C){return;}
+		}
+		clients>>C; /*adds C to end of the list*/
+		C -> entry(this);
+	}
+	broadcast(string M){
+		int i;
+		for (i=0;i<length(clients);i++){
+			clients[i] -> write ( M );
+		}
+	}
+}
+Client {
+	node server;
+	entry(node S){
+		if (server == null){
+			server = S;
+			server -> entry(this);
+		}}
+	write(string M){print(M);}
+	broadcast(string M){
+		server -> broadcast(M);
+	}
+}

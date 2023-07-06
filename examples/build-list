@@ -1,0 +1,51 @@
+/* see https://cs.upb.de/fileadmin/informatik/fg/ti/Lehre/SS_2017/VAD/VAD5-Prozess-DS.pdf */
+myNode {
+	node left;
+	node right;
+
+	entry(node C){
+		linearize(C);
+	}
+
+	linearize(node V){
+		if (id(V)<id(this)){
+			if (left==null){
+				left=V;
+			}else{
+				if(id(left)<id(V)){
+					V->linearize(left);
+					left=V;
+				}else{
+					left->linearize(V);
+				}
+			}
+		}else if(id(V)>id(this)){
+			if (right==null){
+				right=V;
+			}else{
+				if(id(right)>id(V)){
+					V->linearize(right);
+					right=V;
+				}else{
+					right->linearize(V);
+				}
+			}
+			
+		}
+		/* else id(this)=id(V)*/
+	}
+
+	timeout(){
+		if (left != null & id(left)<id(this)){
+			left -> linearize(this);
+		}else{
+			this->linearize(left);
+			left = null;
+		}if (right != null & id(right)>id(this)){
+			right -> linearize(this);
+		}else{
+			this->linearize(right);
+			right = null;
+		}
+	}
+} 

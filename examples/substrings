@@ -1,0 +1,8 @@
+test{
+	init(){
+		string s="Hello World";
+		int i;
+		for (i=0;i<str_len(s);i++)
+			print(sub_str(s,i,i+1));
+	}
+}
