@@ -1,0 +1,60 @@
+ListNode {
+	node left;
+	node right;
+
+	entry(node C) {
+		linearize(C);
+	}
+
+	timeout() {
+		/* 1a TODO linearisiere */
+		/* 1b TODO überbrücke */
+		if (left != null & id(left) < id(this)) {
+			left -> linearize(this);
+		}
+		else{
+			this -> linearize(left);
+			left = null;
+		}
+		if (right != null & id(right)>id(this)) {
+			right -> linearize(this);
+		}
+		else{
+			this -> linearize(right);
+			right = null;
+		}
+	}
+
+	linearize(node V) {
+		/* 2 TODO linearisiere */
+		if (id(V)<id(this)) {
+			if (left == null) {
+				left = V;
+			}
+			else {
+				if (id(left) < id(V)) {
+					V -> linearize(left);
+					left = V;
+				}
+				else {
+					left -> linearize(V);
+				}
+			}
+		}
+		else if(id(V) > id(this)) {
+			if (right == null) {
+				right = V;
+			}
+			else {
+				if(id(right) > id(V)) {
+					V -> linearize(right);
+					right = V;
+				}
+				else{
+					right -> linearize(V);
+				}
+			}
+			
+		}
+	}
+} 
