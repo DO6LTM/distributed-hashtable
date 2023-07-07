@@ -1,17 +1,40 @@
 ListNode {
-	node left;
-	node right;
+	node[] left;
+	node[] right;
 	
 	float hash_value; /* Hashwert von this */
-	int[] r; /* Bitstring von hash_value */
+	int[][] r; /* Bitstring von hash_value */
+	float[][] range; /* Für jeden Level i speichert range[i][0] linke Grenze und range[i][1] rechte Grenze */
+	node[][] n; /* Für jeden Level i speichert n[i][*] die Nachbarknoten */
 	int R_LENGTH = 64; /* Länge von r */
+	
+	node[] succs; /* Zum temporären Speichern von succ und pred */
+	node[] preds;
 	
 	/* Konstruktor */
 	init() {
 		/* Hashen, Bitrepräs. */
 		hash_value = g(id(this));
 		
-		floatToBitstring(hash_value, R_LENGTH, r);
+		floatToBitstringCache(hash_value, R_LENGTH, r, id(this));
+	}
+	
+	/* Hashwert F als Bitstring der Länge L in A an Index I schreiben */
+	floatToBitstringCache(float F, int L, int[][] A, int I) {
+		float tmp = F;
+		int i;
+		float res;
+		for (i = 0; i < L; i++) {
+			res = tmp * 2.0;
+			if (res >= 1) {
+				A[I][i] = 1;
+				tmp = res - 1.0;
+			}
+			else if (res < 1) {
+				A[I][i] = 0;
+				tmp = res;
+			}
+		}
 	}
 	
 	/* Hashwert F als Bitstring der Länge L in A schreiben */
@@ -47,12 +70,148 @@ ListNode {
 		}
 	}
 	
-	/* Gibt den nächsten Nachfolger von V zurück mit prefix_i(V)*B */
-	succ node(int I, node V, int B, int[] A) {
+	/* Gibt den nächsten Vorgänger von V zurück mit prefix_i(V)*B */
+	pred(int I, node V, int B) {
 		int[] pref;
 		prefix(I, V, pref);
 		pref >> B;
-		/* TODO Nachfolger suchen */
+		if(left[0] != null) {
+			left[0] -> add_to_pred(this, pref, B);
+		}
+		pref <<<<;
+	}
+	
+	/* Fügt this zu pred hinzu, wenn P übereinstimmt */
+	add_to_pred(node V, int[] P, int B) {
+		bool mismatch = false;
+		int i;
+		for (i = 0; i < length(P); i++) {
+			if (P[i] != r[id(this)][i]) {
+				mismatch = true;
+				break;
+			}
+		}
+		if (mismatch == false) {
+			V -> _add_to_pred(this, B);
+		}
+		else {
+			if (left[0] != null) {
+				left[0] -> add_to_pred(V, P, B);
+			}
+		}
+	}
+	
+	/* Fügt V an Index I zu preds hinzu*/
+	_add_to_pred(node V, int I) {
+		preds[I] = V;
+	}
+	
+	/* Gibt den nächsten Nachfolger von V zurück mit prefix_i(V)*B */
+	succ(int I, node V, int B) {
+		int[] pref;
+		prefix(I, V, pref);
+		pref >> B;
+		if(right[0] != null) {
+			right[0] -> add_to_succ(this, pref, B);
+		}
+		pref <<<<;
+	}
+	
+	/* Fügt this zu succs hinzu, wenn P übereinstimmt */
+	add_to_succ(node V, int[] P, int B) {
+		bool mismatch = false;
+		int i;
+		for (i = 0; i < length(P); i++) {
+			if (P[i] != r[id(this)][i]) {
+				mismatch = true;
+				break;
+			}
+		}
+		if (mismatch == false) {
+			V -> _add_to_succ(this, B);
+		}
+		else {
+			if (right[0] != null) {
+				right[0] -> add_to_succ(V, P, B);
+			}
+		}
+	}
+	
+	/* Fügt V an Index I zu succs hinzu*/
+	_add_to_succ(node V, int I) {
+		succs[I] = V;
+	}
+	
+	/* Aktualisiert die range für einen Level I */
+	update_range(int I) {
+		range[I][0] = 0;
+		range[I][1] = 1;
+		
+		pred(I, this, 0);
+		pred(I, this, 1);
+		
+		succ(I, this, 0);
+		succ(I, this, 1);
+		
+		if (g(id(preds[0])) < g(id(preds[1]))) {
+			range[I][0] = g(id(preds[0]));
+		}
+		else {
+			range[I][1] = g(id(preds[1]));
+		}
+		
+		if (g(id(succs[0])) > g(id(succs[1]))) {
+			range[I][0] = g(id(succs[0]));
+		}
+		else {
+			range[I][1] = g(id(succs[1]));
+		}
+		
+		update_n(I);
+	}
+	
+	/* Aktualisiert n für einen Level I */
+	update_n(int I) {
+		float l = range[I][0];
+		float r = range[I][1];
+		add_to_n_for_left(I, this, l, r);
+		add_to_n_for_right(I, this, l, r);
+	}
+	
+	/* Anfrage, ob Knoten in n von V eingefügt werden soll, wenn g(id(this)) in range[I] liegt für alle linken Knoten */
+	add_to_n_for_left(int I, node V, float L, float R) {
+		if (V != this) {
+			float key = g(id(this));
+			if (L <= key & key <= R) {
+				V -> _add_to_n(I, this);
+			}
+		}
+		if (left[0] != null) {
+			left[0] -> add_to_n_for_left(I, V, L, R);
+		}
+	}
+	
+	/* Anfrage, ob Knoten in n von V eingefügt werden soll, wenn g(id(this)) in range[I] liegt für alle rechten Knoten */
+	add_to_n_for_right(int I, node V, float L, float R) {
+		if (V != this) {
+			float key = g(id(this));
+			if (L <= key & key <= R) {
+				V -> _add_to_n(I, this);
+			}
+		}
+		if (right[0] != null) {
+			right[0] -> add_to_n_for_right(I, V, L, R);
+		}
+	}
+	
+	/* Fügt Knoten V in n ein, wenn g(id(V)) */
+	_add_to_n(int I, node V) {
+		if (length(n[I]) <= 0) {
+			n[I][0] = V;
+		}
+		else {
+			n[I][length(n[I])] = V;
+		}
 	}
 	
 	/* Hashfunktion g, bildet I auf [0,1) ab */
@@ -69,50 +228,49 @@ ListNode {
 
 	timeout() {
 		/* 1a TODO linearisiere */
+		if (left[0] != null & g(id(left[0])) < hash_value) {
+			left[0] -> linearize(this);
+		}
+		else{
+			this -> linearize(left[0]);
+			left[0] = null;
+		}
+		if (right[0] != null & g(id(right[0])) > hash_value) {
+			right[0] -> linearize(this);
+		}
+		else{
+			this -> linearize(right[0]);
+			right[0] = null;
+		}
 		/* 1b TODO überbrücke */
-		if (left != null & g(id(left)) < hash_value) {
-			left -> linearize(this);
-		}
-		else{
-			this -> linearize(left);
-			left = null;
-		}
-		if (right != null & g(id(right)) > hash_value) {
-			right -> linearize(this);
-		}
-		else{
-			this -> linearize(right);
-			right = null;
-		}
 	}
 
-	linearize(node V) {
-		/* 2 TODO linearisiere */
+	linearize(node V) {	
 		if (g(id(V)) < hash_value) {
-			if (left == null) {
-				left = V;
+			if (left[0] == null) {
+				left[0] = V;
 			}
 			else {
-				if (g(id(left)) < g(id(V))) {
-					V -> linearize(left);
-					left = V;
+				if (g(id(left[0])) < g(id(V))) {
+					V -> linearize(left[0]);
+					left[0] = V;
 				}
 				else {
-					left -> linearize(V);
+					left[0] -> linearize(V);
 				}
 			}
 		}
 		else if(g(id(V)) > hash_value) {
-			if (right == null) {
-				right = V;
+			if (right[0] == null) {
+				right[0] = V;
 			}
 			else {
-				if(g(id(right)) > g(id(V))) {
-					V -> linearize(right);
-					right = V;
+				if(g(id(right[0])) > g(id(V))) {
+					V -> linearize(right[0]);
+					right[0] = V;
 				}
 				else{
-					right -> linearize(V);
+					right[0] -> linearize(V);
 				}
 			}
 		}
