@@ -1,4 +1,4 @@
-// F:\Uni\VAuD\distributed-hashtable\project
+// C:\Users\Konstantin\Desktop\Uni\netsimlan\data\distributed-hashtable\project
 import java.util.AbstractMap.SimpleEntry;
 import simulator.NodeGenerator;
 import simulator.Node;
