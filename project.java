@@ -366,6 +366,9 @@ funprefix(p31, p32, v34);addArrayEnd(v34,p33);
 if(((getArrayIndex(v1,null,0)!=null?((Edge)(getArrayIndex(v1,null,0))).node:null)!=null)){{
 {if ((getArrayIndex(v1,null,0)!=null?((Edge)(getArrayIndex(v1,null,0))).node:null)!=null) (getArrayIndex(v1,null,0)!=null?((Edge)(getArrayIndex(v1,null,0))).node:null).send("add_to_pred",false,this, v34, p33, p31);}
 }
+} else {{
+removeArrayIndex(v34,v34.size()-1,0);
+fun_add_to_pred(this, p33, p31, v34);}
 }}
  catch (ArithmeticException e){ print("arithmetic exception in pred: "+e.getMessage()); } return ;} long callCounteradd_to_pred;
 protected void funadd_to_pred(simulator.Node p35, List<Integer> p36, int p37, int p38) { callCounteradd_to_pred++; try {
@@ -403,6 +406,9 @@ funprefix(p45, p46, v48);addArrayEnd(v48,p47);
 if(((getArrayIndex(v2,null,0)!=null?((Edge)(getArrayIndex(v2,null,0))).node:null)!=null)){{
 {if ((getArrayIndex(v2,null,0)!=null?((Edge)(getArrayIndex(v2,null,0))).node:null)!=null) (getArrayIndex(v2,null,0)!=null?((Edge)(getArrayIndex(v2,null,0))).node:null).send("add_to_succ",false,this, v48, p47, p45);}
 }
+} else {{
+removeArrayIndex(v48,v48.size()-1,0);
+fun_add_to_succ(this, p47, p45, v48);}
 }}
  catch (ArithmeticException e){ print("arithmetic exception in succ: "+e.getMessage()); } return ;} long callCounteradd_to_succ;
 protected void funadd_to_succ(simulator.Node p49, List<Integer> p50, int p51, int p52) { callCounteradd_to_succ++; try {
