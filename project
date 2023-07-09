@@ -1,7 +1,7 @@
 /*
 	Methoden, die mit einem _ beginnen, werden als Setter-Funktionen von anderen Knoten aufgerufen.
 */
-ListNode {
+SkipNode {
 	node[] left;
 	node[] right;
 	
@@ -13,8 +13,10 @@ ListNode {
 	int [] n_length; /* Speichert Länge des Arrays n[i] */
 	int R_LENGTH = 64; /* Länge von r */
 	
-	node[] succs hidden; /* Zum temporären Speichern von succ und pred */
-	node[] preds hidden;
+	node[][] succs hidden; /* Zum temporären Speichern von succ und pred */
+	node[][] preds hidden;
+
+	int timeout_counter = 0;
 	
 	/* Konstruktor */
 	init() {
@@ -114,8 +116,8 @@ ListNode {
 	
 	/* Fügt V an Index I zu preds hinzu*/
 	_add_to_pred(node V, int B, int I, int[] P) {
-		preds[B] = V;
-		if (length(preds) == 2 & length(succs) == 2) {
+		preds[I][B] = V;
+		if (preds[I][0] != null & preds[I][1] != null & succs[I][0] != null & succs[I][1] != null) {
 			set_range(I, P);
 		}
 	}
@@ -157,16 +159,18 @@ ListNode {
 	
 	/* Fügt V an Index I zu succs hinzu*/
 	_add_to_succ(node V, int B, int I, int[] P) {
-		succs[B] = V;
-		if (length(preds) == 2 & length(succs) == 2) {
+		succs[I][B] = V;
+		if (preds[I][0] != null & preds[I][1] != null & succs[I][0] != null & succs[I][1] != null) {
 			set_range(I, P);
 		}
 	}
 	
 	/* Aktualisiert die range für einen Level I */
-	update_range(int I) {
-		preds <<<<;
-		succs <<<<;
+	update_range int(int I) {
+		preds[I][0] = null;
+		preds[I][1] = null;
+		succs[I][0] = null;
+		succs[I][1] = null;
 		
 		range[I][0] = 0;
 		range[I][1] = 1;
@@ -176,30 +180,32 @@ ListNode {
 		
 		succ(I, this, 0);
 		succ(I, this, 1);
+		return 0;
 	}
 	
+	/* Ermittelt anhand der Werte in preds und succs für einen Level I die range */
 	set_range(int I, int[] P) {
-		if (h(id(preds[0])) == hash_value | h(id(preds[1])) == hash_value) {
+		if (h(id(preds[I][0])) == hash_value | h(id(preds[I][1])) == hash_value) {
 			range[I][0] = 0.0;
 		}
 		else {
-			if (h(id(preds[0])) < h(id(preds[1]))) {
-				range[I][0] = h(id(preds[0]));
+			if (h(id(preds[I][0])) < h(id(preds[I][1]))) {
+				range[I][0] = h(id(preds[I][0]));
 			}
 			else {
-				range[I][0] = h(id(preds[1]));
+				range[I][0] = h(id(preds[I][1]));
 			}
 		}
 		
-		if (h(id(succs[0])) == hash_value | h(id(succs[1])) == hash_value) {
+		if (h(id(succs[I][0])) == hash_value | h(id(succs[I][1])) == hash_value) {
 			range[I][1] = 1.0;
 		}
 		else {
-			if (h(id(succs[0])) > h(id(succs[1]))) {
-				range[I][1] = h(id(succs[0]));
+			if (h(id(succs[I][0])) > h(id(succs[I][1]))) {
+				range[I][1] = h(id(succs[I][0]));
 			}
 			else {
-				range[I][1] = h(id(succs[1]));
+				range[I][1] = h(id(succs[I][1]));
 			}
 		}
 		update_n(I, P);
@@ -294,7 +300,8 @@ ListNode {
 	}
 
 	timeout() {
-		/* 1a TODO linearisiere */
+		timeout_counter++;
+		/* Basisliste linearisieren */
 		if (left[0] != null & h(id(left[0])) < hash_value) {
 			left[0] -> linearize(this);
 		}
@@ -309,7 +316,53 @@ ListNode {
 			this -> linearize(right[0]);
 			right[0] = null;
 		}
-		/* 1b TODO überbrücke */
+		/* 1a linearisiere Nachbarknoten */
+		int i;
+		for (i = 1; i < R_LENGTH/8; i++) {
+			if (timeout_counter % 100 == 0) {
+				update_range(i);
+			}
+			if (timeout_counter % 100 == 50) {
+				/*quicksort(0, n_length[i]-1, n, i);
+				int j;
+				for (j = 0; j < n_length[i]; j++) {
+					if (h(id(n[i][j])) < hash_value) {
+						if (h(id(n[i][j+1])) < hash_value) {
+							n[i][j] -> _set_right(n[i][j+1], i);
+						}
+						else {
+							n[i][j] -> _set_right(this, i);
+							break;
+						}
+					}
+					else {
+						break;
+					}
+				}
+				int k;
+				for (k = n_length[i]-1; k > j; j--) {
+					if (h(id(n[i][k])) > hash_value) {
+						if (h(id(n[i][k-1])) > hash_value) {
+							n[i][k] -> _set_left(n[i][k-1], i);
+						}
+						else {
+							n[i][k] -> _set_left(this, i);
+							break;
+						}
+					}
+				}*/
+			}
+		}
+		
+		/* 1b überbrück Nachbarknoten */
+	}
+	
+	_set_right(node V, int I) {
+		right[I] = V;
+	}
+	
+	_set_left(node V, int I) {
+		left[I] = V;
 	}
 
 	linearize(node V) {	
@@ -341,5 +394,50 @@ ListNode {
 				}
 			}
 		}
+	}
+	
+	/* Quicksort aufruf mit l=0 und r=length(A[I])-1 */
+	quicksort int(int L, int R, node[][] A, int I) {
+		if (L < R) {
+			int m = teile(L, R, A, I);
+			quicksort(L, m - 1, A, I);
+			quicksort(m + 1, R, A, I);
+		}
+		else {
+			return 0;
+		}
+	}
+	
+	/* Hilfsfunktion für quicksort */
+	teile int(int L, int R, node[][] A, int I) {
+		int i = L;
+		int j = R - 1;
+		float pivot = h(id(A[I][R]));
+		
+		while (i < j) {
+			while (i < j & h(id(A[I][i])) <= pivot) {
+				i = i + 1;
+			}
+			
+			while (j > i & h(id(A[I][j])) > pivot) {
+				j = j - 1;
+			}
+			
+			if (h(id(A[I][i])) > h(id(A[I][j]))) {
+				node tmp = A[I][i];
+				A[I][i] = A[I][j];
+				A[I][j] = tmp;
+			}
+		}
+		
+		if (h(id(A[I][i])) > pivot) {
+			node tmp = A[I][i];
+			A[I][i] = A[I][R];
+			A[I][R] = tmp;
+		}
+		else {
+			i = R;
+		}
+		return i;
 	}
 } 
