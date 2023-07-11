@@ -58,9 +58,11 @@ SkipNode {
 	level int() {
 		int max = 0;
 		for (node w : nh) {
-			int tmp = commonPrefix(rs, nh_rs[id(w)]);
-			if (tmp > max) {
-				max = tmp;
+			if (w != null) {
+				int tmp = commonPrefix(rs, nh_rs[id(w)]);
+				if (tmp > max) {
+					max = tmp;
+				}
 			}
 		}
 		return max;
@@ -93,27 +95,31 @@ SkipNode {
 	/* Aktualisiert die Nachbarschaft; Entfernt ggf. w und delegiert an Knoten x mit größter Prefixübereinstimmung */
 	checkNeighbourhood() {
 		for (node w : nh) {
-			if (checkNode(w) == false) {
-				nh[id(w)] = null;
-				int argmax = 0;
-				node max;
-				for (node x : nh) {
-					int tmp = commonPrefix(nh_rs[id(w)], nh_rs[id(x)]);
-					if (argmax <= tmp) {
-						argmax = tmp;
-						max = x;
+			if (w != null) {
+				if (checkNode(w) == false) {
+					nh[id(w)] = null;
+					int argmax = 0;
+					node max;
+					for (node x : nh) {
+						if (x != null) {
+							int tmp = commonPrefix(nh_rs[id(w)], nh_rs[id(x)]);
+							if (argmax <= tmp) {
+								argmax = tmp;
+								max = x;
+							}
+						}
 					}
+					nh_identifier[id(w)] = NaN;
+					nh_rs[id(w)] = "";
+					max -> build(w);
 				}
-				nh_identifier[id(w)] = NaN;
-				nh_rs[id(w)] = "";
-				max -> build(w);
 			}
 		}
 	}
 	
 	/* Fügt X in nh ein */
 	build(node X) {
-		if (X == this) {
+		if (X == this | X == null) {
 			return;
 		}
 		if (nh[id(X)] != null) {
@@ -131,10 +137,12 @@ SkipNode {
 				int argmax = 0;
 				node max;
 				for (node w : nh) {
-					int tmp = commonPrefix(nh_rs[id(X)], nh_rs[id(w)]);
-					if (argmax <= tmp) {
-						argmax = tmp;
-						max = w;
+					if (w != null) {
+						int tmp = commonPrefix(nh_rs[id(X)], nh_rs[id(w)]);
+						if (argmax <= tmp) {
+							argmax = tmp;
+							max = w;
+						}
 					}
 				}
 				nh_identifier[id(X)] = NaN;
@@ -152,8 +160,6 @@ SkipNode {
 			if (prefix(rs, i) == prefix(getBitstring(h1(id(W))), i)
 				& (farthestPred(i) == null | nh_identifier[id(W)] >= nh_identifier[id(farthestPred(i))]) 
 				& (farthestSucc(i) == null | nh_identifier[id(W)] <= nh_identifier[id(farthestSucc(i))])) {
-				
-				/*print(id(farthestSucc(i)) + " liegt in Range " + i + " von " + id(this));*/
 				needed = true;
 				break;
 			}
@@ -162,7 +168,7 @@ SkipNode {
 	}
 	
 	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh und einen Bit B */
-	farthestPredB node(int I, int B) {
+	farthestPredB node(int I, string B) {
 		node[] preds;
 		predecessors(I, preds);
 		node argmin;
@@ -179,8 +185,8 @@ SkipNode {
 	
 	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh */
 	farthestPred node(int I) {
-		node pred0 = farthestPredB(I, 0);
-		node pred1 = farthestPredB(I, 1);
+		node pred0 = farthestPredB(I, "0");
+		node pred1 = farthestPredB(I, "1");
 		
 		if (pred0 == null | pred1 == null) {
 			return null;
@@ -195,7 +201,7 @@ SkipNode {
 	}
 	
 	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh und einen Bit B */
-	farthestSuccB node(int I, int B) {
+	farthestSuccB node(int I, string B) {
 		node[] succs;
 		successors(I, succs);
 		node argmax;
@@ -212,8 +218,8 @@ SkipNode {
 	
 	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh */
 	farthestSucc node(int I) {
-		node succ0 = farthestSuccB(I, 0);
-		node succ1 = farthestSuccB(I, 1);
+		node succ0 = farthestSuccB(I, "0");
+		node succ1 = farthestSuccB(I, "1");
 		
 		if (succ0 == null | succ1 == null) {
 			return null;
@@ -230,7 +236,9 @@ SkipNode {
 	/* Sendet build-Anfragen an alle Nachbarknoten */
 	introduceNode() {
 		for (node w : nh) {
-			w -> build(this);
+			if (w != null) {
+				w -> build(this);
+			}
 		}
 	}
 	
@@ -281,9 +289,10 @@ SkipNode {
 	neighbours(int I, node[] A) {
 		A <<<<;
 		for (node u : nh) {
-			if (commonPrefix(rs, nh_rs[id(u)]) == I) {
-				A >> u;
-				print(u);
+			if (u != null) {
+				if (commonPrefix(rs, nh_rs[id(u)]) == I) {
+					A >> u;
+				}
 			}
 		}
 	}
@@ -292,8 +301,10 @@ SkipNode {
 	predecessors(int I, node[] A) {
 		neighbours(I, A);
 		for (node u : A) {
-			if (nh_identifier[id(u)] < identifier) {
-				A >> u;
+			if (u != null) {
+				if (nh_identifier[id(u)] < identifier) {
+					A >> u;
+				}
 			}
 		}
 	}
@@ -343,7 +354,9 @@ SkipNode {
 	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
 	leave() {
 		for (node w : nh) {
-			w -> remove(this);
+			if (w != null) {
+				w -> remove(this);
+			}
 		}
 		nh <<<<;
 		nh_identifier <<<<;
@@ -356,6 +369,26 @@ SkipNode {
 			nh[id(X)] = null;
 			nh_identifier[id(X)] = NaN;
 			nh_rs[id(X)] = "";
+		}
+	}
+	
+	/* Stelle lookup-Anfrage an Knoten X */
+	lookup(node X) {
+		if (id(this) != id(X)) {
+			string rs_x = getBitstring(h1(id(X)));
+			int len;
+			if (level() < commonPrefix(rs, rs_x)) {
+				len = level();
+			}
+			else {
+				len = commonPrefix(rs, rs_x);
+			}
+			
+			node w = farthestPredB(len, sub_str(rs_x,len,len+1));
+			if (w == null) {
+				w = farthestSuccB(len, sub_str(rs_x,len,len+1));
+			}
+			w -> lookup(X);
 		}
 	}
 }
