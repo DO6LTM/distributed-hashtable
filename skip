@@ -94,7 +94,7 @@ SkipNode {
 	checkNeighbourhood() {
 		for (node w : nh) {
 			if (checkNode(w) == false) {
-				nh <[id(w)]<;
+				nh[id(w)] = null;
 				int argmax = 0;
 				node max;
 				for (node x : nh) {
@@ -104,8 +104,8 @@ SkipNode {
 						max = x;
 					}
 				}
-				nh_identifier <[id(w)]<;
-				nh_rs <[id(w)]<;
+				nh_identifier[id(w)] = NaN;
+				nh_rs[id(w)] = "";
 				max -> build(w);
 			}
 		}
@@ -127,7 +127,7 @@ SkipNode {
 				checkNeighbourhood();
 			}
 			else {
-				nh <[id(X)]<;
+				nh[id(X)] = null;
 				int argmax = 0;
 				node max;
 				for (node w : nh) {
@@ -137,8 +137,8 @@ SkipNode {
 						max = w;
 					}
 				}
-				nh_identifier <[id(X)]<;
-				nh_rs <[id(X)]<;
+				nh_identifier[id(X)] = NaN;
+				nh_rs[id(X)] = "";
 				max -> build(X);
 			}
 		}
@@ -152,6 +152,8 @@ SkipNode {
 			if (prefix(rs, i) == prefix(getBitstring(h1(id(W))), i)
 				& (farthestPred(i) == null | nh_identifier[id(W)] >= nh_identifier[id(farthestPred(i))]) 
 				& (farthestSucc(i) == null | nh_identifier[id(W)] <= nh_identifier[id(farthestSucc(i))])) {
+				
+				print(id(W) + " liegt in Range " + i + " von " + id(this));
 				needed = true;
 				break;
 			}
@@ -335,5 +337,24 @@ SkipNode {
 		}
 		list <<<<;
 		return argmin;
+	}
+	
+	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
+	leave() {
+		for (node w : nh) {
+			w -> remove(this);
+		}
+		nh <<<<;
+		nh_identifier <<<<;
+		nh_rs <<<<;
+	}
+	
+	/* Entfernt einen Knoten X aus nh */
+	remove(node X) {
+		if (nh[id(X)] != null) {
+			nh[id(X)] = null;
+			nh_identifier[id(X)] = NaN;
+			nh_rs[id(X)] = "";
+		}
 	}
 }
