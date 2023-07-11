@@ -153,7 +153,7 @@ SkipNode {
 				& (farthestPred(i) == null | nh_identifier[id(W)] >= nh_identifier[id(farthestPred(i))]) 
 				& (farthestSucc(i) == null | nh_identifier[id(W)] <= nh_identifier[id(farthestSucc(i))])) {
 				
-				print(id(W) + " liegt in Range " + i + " von " + id(this));
+				/*print(id(farthestSucc(i)) + " liegt in Range " + i + " von " + id(this));*/
 				needed = true;
 				break;
 			}
@@ -283,6 +283,7 @@ SkipNode {
 		for (node u : nh) {
 			if (commonPrefix(rs, nh_rs[id(u)]) == I) {
 				A >> u;
+				print(u);
 			}
 		}
 	}
