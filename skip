@@ -2,7 +2,7 @@ SkipNode {
 	float identifier; /* Hashwert von id(this) */
 	string rs; /* pseudo-random Bitstring */
 	int RS_LENGTH = 32; /* Länge des Bitstrings */
-	[node, string] nh; /* Nachbarschaft von this */
+	node[] nh; /* Nachbarschaft von this */
 
 	/* Konstruktor */
 	init() {
@@ -55,18 +55,13 @@ SkipNode {
 	/* Ermittelt das aktuelle Level */
 	level int() {
 		int max = 0;
-		for (node w : string bs : nh) {
+		for (node w : nh) {
 			int tmp = commonPrefix(this, w);
 			if (tmp > max) {
 				max = tmp;
 			}
 		}
 		return max;
-	}
-	
-	/* Gibt den aktuellen Knotengrad zurück */
-	deg int() {
-		return length(nh);
 	}
 
 	/* Hashfunktion h, bildet I auf [0,1) ab */
@@ -95,12 +90,12 @@ SkipNode {
 	
 	/* Aktualisiert die Nachbarschaft; Entfernt ggf. w und delegiert an Knoten x mit größter Prefixübereinstimmung */
 	checkNeighbourhood() {
-		for (node w : string bs_w : nh) {
+		for (node w : nh) {
 			if (checkNode(w) == false) {
-				nh <[w]<;
+				nh <[id(w)]<;
 				int argmax = 0;
 				node max;
-				for (node x : string bs_x : nh) {
+				for (node x : nh) {
 					int tmp = commonPrefix(w, x);
 					if (argmax <= tmp) {
 						argmax = tmp;
@@ -114,19 +109,19 @@ SkipNode {
 	
 	/* Fügt X in nh ein */
 	build(node X) {
-		if (containts(nh, X)) {
+		if (nh[id(X)] != null) {
 			checkNeighbourhood();
 		}
 		else {
-			nh[X] = getBitstring(h1(id(X)));
+			nh[id(X)] = X;
 			if (checkNode(X) == true) {
 				checkNeighbourhood();
 			}
 			else {
-				nh <[X]<;
+				nh <[id(X)]<;
 				int argmax = 0;
 				node max;
-				for (node w : string bs_w : nh) {
+				for (node w : nh) {
 					int tmp = commonPrefix(X, w);
 					if (argmax <= tmp) {
 						argmax = tmp;
@@ -213,7 +208,7 @@ SkipNode {
 	
 	/* Sendet build-Anfragen an alle Nachbarknoten */
 	introduceNode() {
-		for (node w : string bs : nh) {
+		for (node w : nh) {
 			w -> build(this);
 		}
 	}
@@ -260,7 +255,7 @@ SkipNode {
 	/* Filtert alle Nachbarknoten für ein Level I in eine Liste A */
 	neighbours(int I, node[] A) {
 		A <<<<;
-		for (node u : string bs : nh) {
+		for (node u : nh) {
 			if (commonPrefix(this, u) == I) {
 				A >> u;
 			}
