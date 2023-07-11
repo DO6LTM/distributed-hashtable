@@ -9,26 +9,19 @@ $PathToNetSimLan="..."
 
 function Invoke-SomeAction
 {
-  param
-  (
-    $Proc
-  )
-
   Write-Warning 'Change detected -> restarting NetSimLan'
-
-  if ($Proc -ne $null) {
-    $Proc.Kill()
+  
+  try {
+    Get-Process -Name "Java" | Stop-Process
+  } catch {
   }
 
-  Start-Process -PassThru -FilePath java.exe -NoNewWindow -ArgumentList @(
+  Start-Process -FilePath java.exe -ArgumentList @(
     "-jar $PathToNetSimLan"
     "$PathOfScriptDir\$FileName"
     )
 
 }
-
-# Global variable for storing the process
-$global:Process=$null
 
 try
 {
@@ -44,7 +37,7 @@ try
     # if there was a timeout, continue monitoring:
     if ($result.TimedOut) { continue }
     
-    $Process=Invoke-SomeAction $Process  
+    Invoke-SomeAction
   } while ($true)
 }
 finally
