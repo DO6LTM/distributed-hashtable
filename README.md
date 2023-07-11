@@ -8,25 +8,20 @@
 (:  (  )  :)/   /  \\  \  /" \   :)(:  (  )  :)    |.  \    /:  |(:      "|                      
  \__|  |__/(___/    \___)(_______/  \__|  |__/     |___|\__/|___| \_______)                      
                                                                                                  
- _______       __       _______  ___  ___         ______    _____  ___    _______                
-|   _  "\     /""\     |   _  "\|"  \/"  |       /    " \  (\"   \|"  \  /"     "|               
-(. |_)  :)   /    \    (. |_)  :)\   \  /       // ____  \ |.\\   \    |(: ______)               
-|:     \/   /' /\  \   |:     \/  \\  \/       /  /    ) :)|: \.   \\  | \/    |                 
-(|  _  \\  //  __'  \  (|  _  \\  /   /       (: (____/ // |.  \    \. | // ___)_                
-|: |_)  :)/   /  \\  \ |: |_)  :)/   /         \        /  |    \    \ |(:      "|               
-(_______/(___/    \___)(_______/|___/           \"_____/    \___|\____\) \_______)               
-                                                                                                 
- ___      ___     ______     _______    _______      ___________  __     ___      ___   _______  
-|"  \    /"  |   /    " \   /"      \  /"     "|    ("     _   ")|" \   |"  \    /"  | /"     "| 
- \   \  //   |  // ____  \ |:        |(: ______)     )__/  \\__/ ||  |   \   \  //   |(: ______) 
- /\\  \/.    | /  /    ) :)|_____/   ) \/    |          \\_ /    |:  |   /\\  \/.    | \/    |   
-|: \.        |(: (____/ //  //      /  // ___)_         |.  |    |.  |  |: \.        | // ___)_  
-|.  \    /:  | \        /  |:  __   \ (:      "|        \:  |    /\  |\ |.  \    /:  |(:      "| 
-|___|\__/|___|  \"_____/   |__|  \___) \_______)         \__|   (__\_|_)|___|\__/|___| \_______) 
 ```
 
 # Verteilte Hashtabelle für Netsimlan
 Selbststabilisierende Hashtabelle (bestehend aus konsistentem Hashing auf dem Skip+-Graphen) mit combine&amp;split und den Operationen Join, einfaches Leave, Insert, Delete und Search
+
+# ⚒️ Tools
+## NetSimLan Script Watcher
+Der NetSimLan Script Watcher ist ein PowerShell Skript, welches zum **automatischen Neustarten** von NetSimLan genutzt werden kann, sobald ein definiertes Skript gespeichert wird. 
+
+Ggf. muss zum Ausführen des Skripts vorher die **Execution Policy** von PowerShell angepasst werden. (Auf eigene Gefahr)
+```PowerShell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+```
+Nachdem der Pfad zum Skript und zur NetSimLan Launchar.Jar angegeben wurde, kann das Skript einfach gestartet werden. Gestoppt werden kann der Watcher mit `Ctrl + C`.
 
 # Details zu NetSimLan
 ```
