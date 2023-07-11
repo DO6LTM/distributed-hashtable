@@ -240,13 +240,17 @@ SkipNode {
 			predecessors(i, preds);
 			int j;
 			for (j = 0; j < length(preds); j++) {
-				preds[j] -> build(preds[j+1]);
+				node to = preds[j];
+				node m = preds[j+1];
+				to -> build(m);
 			}
 			preds <<<<;
 			node[] succs;
 			successors(i, succs);
 			for (j = 0; j < length(succs); j++) {
-				succs[j] -> build(succs[j+1]);
+				node to = succs[j];
+				node m = succs[j+1];
+				to -> build(m);
 			}
 			succs <<<<;
 		}
