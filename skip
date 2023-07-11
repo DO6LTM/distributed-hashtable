@@ -104,6 +104,8 @@ SkipNode {
 						max = x;
 					}
 				}
+				nh_identifier <[id(w)]<;
+				nh_rs <[id(w)]<;
 				max -> build(w);
 			}
 		}
@@ -126,8 +128,6 @@ SkipNode {
 			}
 			else {
 				nh <[id(X)]<;
-				nh_identifier <[id(X)]<;
-				nh_rs <[id(X)]<;
 				int argmax = 0;
 				node max;
 				for (node w : nh) {
@@ -137,12 +137,14 @@ SkipNode {
 						max = w;
 					}
 				}
+				nh_identifier <[id(X)]<;
+				nh_rs <[id(X)]<;
 				max -> build(X);
 			}
 		}
 	}
 	
-	/* Prüft, ob ein Knoten W in der Nachbarschaft benötigt wird */
+	/* Prüft, ob ein Knoten W in der Range von this für eine Level i liegt */
 	checkNode bool(node W) {
 		bool needed = false;
 		int i;
@@ -178,6 +180,10 @@ SkipNode {
 		node pred0 = farthestPredB(I, 0);
 		node pred1 = farthestPredB(I, 1);
 		
+		if (pred0 == null | pred1 == null) {
+			return null;
+		}
+		
 		if (nh_identifier[id(pred0)] < nh_identifier[id(pred1)]) {
 			return pred0;
 		}
@@ -207,6 +213,10 @@ SkipNode {
 		node succ0 = farthestSuccB(I, 0);
 		node succ1 = farthestSuccB(I, 1);
 		
+		if (succ0 == null | succ1 == null) {
+			return null;
+		}
+
 		if (nh_identifier[id(succ0)] > nh_identifier[id(succ1)]) {
 			return succ0;
 		}
@@ -222,7 +232,7 @@ SkipNode {
 		}
 	}
 	
-	/* Stellt den Nachbarknoten die Vorgänger und Nachfolger vor */
+	/* Stellt den Nachbarknoten die direkt Vorgänger und Nachfolger für jedes Level vor */
 	introduceClosestNeighbours() {
 		int i;
 		for (i = 0; i <= level(); i++) {
