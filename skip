@@ -249,11 +249,13 @@ SkipNode {
 			node[] list_neighbours;
 			neighbours(i, list_neighbours);
 			if (closestPred(i) != null) {
+				print("closestPred fuer i=" + i + " : " + closestPred(i));
 				for (node w : list_neighbours) {
 					w -> build(closestPred(i));
 				}
 			}
 			if (closestSucc(i) != null) {
+				print("closestSucc fuer i=" + i + " : " + closestSucc(i));
 				for (node w : list_neighbours) {
 					w -> build(closestSucc(i));
 				}
