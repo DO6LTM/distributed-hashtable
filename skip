@@ -1,0 +1,321 @@
+SkipNode {
+	float identifier; /* Hashwert von id(this) */
+	string rs; /* pseudo-random Bitstring */
+	int RS_LENGTH = 32; /* Länge des Bitstrings */
+	[node, string] nh; /* Nachbarschaft von this */
+
+	/* Konstruktor */
+	init() {
+		identifier = h(id(this));
+		rs = getBitstring(h1(id(this)));
+	}
+	
+	/* Wird beim Initialisieren des Knotens aufgerufen */
+	entry(node W) {
+		W -> build(this);
+	}
+	
+	/* Berechnet einen Bitstring der Länge RS_LENGTH anhand des Eingabewertes H */
+	getBitstring string(float H) {
+		string bitstring = "";
+		int i;
+		for (i = 0; i < RS_LENGTH; i++) {
+			H = H * 2.0;
+			if (H > 1) {
+				bitstring = bitstring + 1;
+				H = H - 1.0;
+			}
+			else if (H < 1) {
+				bitstring = bitstring + 0;
+			}
+			else {
+				bitstring = bitstring + 0;
+				H = H / 2.0;
+			}
+		}
+		return bitstring;
+	}
+	
+	/* Gibt den Prefix der Länge I von V zurück */
+	prefix string(node V, int I) {
+		return sub_str(getBitstring(h1(id(V))), 0, I);
+	}
+	
+	/* Ermittelt den größten gemeinsamen Prefix von V und W */
+	commonPrefix int(node V, node W) {
+		int i;
+		for (i = RS_LENGTH; i > 0; i--) {
+			if (prefix(V, i) == prefix(W, i)) {
+				return i;
+			}
+		}
+		return 0;
+	}
+	
+	/* Ermittelt das aktuelle Level */
+	level int() {
+		int max = 0;
+		for (node w : string bs : nh) {
+			int tmp = commonPrefix(this, w);
+			if (tmp > max) {
+				max = tmp;
+			}
+		}
+		return max;
+	}
+	
+	/* Gibt den aktuellen Knotengrad zurück */
+	deg int() {
+		return length(nh);
+	}
+
+	/* Hashfunktion h, bildet I auf [0,1) ab */
+	h float(int I) {
+		float i = hash(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Hashfunktion h1, bildet I auf [0,1) ab. Wird genutzt um Bitstrings zu generieren. */
+	h1 float(int I) {
+		float i = hash1(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Periodisches Timeout */
+	timeout() {
+		checkNeighbourhood();
+		introduceNode();
+		introduceClosestNeighbours();
+		linearizeNeighbours();
+	}
+	
+	/* Aktualisiert die Nachbarschaft; Entfernt ggf. w und delegiert an Knoten x mit größter Prefixübereinstimmung */
+	checkNeighbourhood() {
+		for (node w : string bs_w : nh) {
+			if (checkNode(w) == false) {
+				nh <[w]<;
+				int argmax = 0;
+				node max;
+				for (node x : string bs_x : nh) {
+					int tmp = commonPrefix(w, x);
+					if (argmax <= tmp) {
+						argmax = tmp;
+						max = x;
+					}
+				}
+				max -> build(w);
+			}
+		}
+	}
+	
+	/* Fügt X in nh ein */
+	build(node X) {
+		if (containts(nh, X)) {
+			checkNeighbourhood();
+		}
+		else {
+			nh[X] = getBitstring(h1(id(X)));
+			if (checkNode(X) == true) {
+				checkNeighbourhood();
+			}
+			else {
+				nh <[X]<;
+				int argmax = 0;
+				node max;
+				for (node w : string bs_w : nh) {
+					int tmp = commonPrefix(X, w);
+					if (argmax <= tmp) {
+						argmax = tmp;
+						max = w;
+					}
+				}
+				max -> build(X);
+			}
+		}
+	}
+	
+	/* Prüft, ob ein Knoten W in der Nachbarschaft benötigt wird */
+	checkNode bool(node W) {
+		bool needed = false;
+		int i;
+		for (i = 0; i <= level(); i++) {
+			if (prefix(this, i) == prefix(W, i)
+				& (farthestPred(i) == null | h(id(W)) >= h(id(farthestPred(i)))) 
+				& (farthestSucc(i) == null | h(id(W)) <= h(id(farthestSucc(i))))) {
+				needed = true;
+				break;
+			}
+		}
+		return needed;
+	}
+	
+	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh und einen Bit B */
+	farthestPredB node(int I, int B) {
+		node[] preds;
+		predecessors(I, preds);
+		node argmin;
+		float min = 1.0;
+		for (node u : preds) {
+			if ((prefix(this, I) + B) == prefix(u, I + 1) & h(id(u)) <= min) {
+				argmin = u;
+				min = h(id(u));
+			}
+		}
+		preds <<<<;
+		return argmin;
+	}
+	
+	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh */
+	farthestPred node(int I) {
+		node pred0 = farthestPredB(I, 0);
+		node pred1 = farthestPredB(I, 1);
+		
+		if (h(id(pred0)) < h(id(pred1))) {
+			return pred0;
+		}
+		else {
+			return pred1;
+		}
+	}
+	
+	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh und einen Bit B */
+	farthestSuccB node(int I, int B) {
+		node[] succs;
+		successors(I, succs);
+		node argmax;
+		float max = 0.0;
+		for (node u : succs) {
+			if ((prefix(this, I) + B) == prefix(u, I + 1) & h(id(u)) >= max) {
+				argmax = u;
+				max = h(id(u));
+			}
+		}
+		succs <<<<;
+		return argmax;
+	}
+	
+	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh */
+	farthestSucc node(int I) {
+		node succ0 = farthestSuccB(I, 0);
+		node succ1 = farthestSuccB(I, 1);
+		
+		if (h(id(succ0)) > h(id(succ1))) {
+			return succ0;
+		}
+		else {
+			return succ1;
+		}
+	}
+	
+	/* Sendet build-Anfragen an alle Nachbarknoten */
+	introduceNode() {
+		for (node w : string bs : nh) {
+			w -> build(this);
+		}
+	}
+	
+	/* Stellt den Nachbarknoten die Vorgänger und Nachfolger vor */
+	introduceClosestNeighbours() {
+		int i;
+		for (i = 0; i <= level(); i++) {
+			node[] list_neighbours;
+			neighbours(i, list_neighbours);
+			if (closestPred(i) != null) {
+				for (node w : list_neighbours) {
+					w -> build(closestPred(i));
+				}
+			}
+			if (closestSucc(i) != null) {
+				for (node w : list_neighbours) {
+					w -> build(closestSucc(i));
+				}
+			}
+		}
+	}
+	
+	/* Linearisiere Nachbarknoten */
+	linearizeNeighbours() {
+		int i;
+		for (i = 0; i <= level(); i++) {
+			node[] preds;
+			predecessors(i, preds);
+			int j;
+			for (j = 0; j < length(preds); j++) {
+				preds[j] -> build(preds[j+1]);
+			}
+			preds <<<<;
+			node[] succs;
+			successors(i, succs);
+			for (j = 0; j < length(succs); j++) {
+				succs[j] -> build(succs[j+1]);
+			}
+			succs <<<<;
+		}
+	}
+	
+	/* Filtert alle Nachbarknoten für ein Level I in eine Liste A */
+	neighbours(int I, node[] A) {
+		A <<<<;
+		for (node u : string bs : nh) {
+			if (commonPrefix(this, u) == I) {
+				A >> u;
+			}
+		}
+	}
+	
+	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A */
+	predecessors(int I, node[] A) {
+		neighbours(I, A);
+		for (node u : A) {
+			if (h(id(u)) < identifier) {
+				A >> u;
+			}
+		}
+	}
+	
+	/* Gibt den nähesten Vorgänger für ein Level I zurück */
+	closestPred node(int I) {
+		node[] list;
+		predecessors(I, list);
+		node argmax;
+		float max = 0.0;
+		for (node u : list) {
+			if (h(id(u)) > max) {
+				argmax = u;
+				max = h(id(u));
+			}
+		}
+		list <<<<;
+		return argmax;
+	}
+	
+	/* Filtert alle Nachfolger der Nachbarknoten für ein Level I in eine Liste A */
+	successors(int I, node[] A) {
+		neighbours(I, A);
+		for (node u : A) {
+			if (h(id(u)) > identifier) {
+				A >> u;
+			}
+		}
+	}
+	
+	/* Gibt den nähesten Nachfolger für ein Level I zurück */
+	closestSucc node(int I) {
+		node[] list;
+		predecessors(I, list);
+		node argmin;
+		float min = 1.0;
+		for (node u : list) {
+			if (h(id(u)) < min) {
+				argmin = u;
+				min = h(id(u));
+			}
+		}
+		list <<<<;
+		return argmin;
+	}
+}
