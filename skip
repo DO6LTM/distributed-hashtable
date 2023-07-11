@@ -3,6 +3,8 @@ SkipNode {
 	string rs; /* pseudo-random Bitstring */
 	int RS_LENGTH = 32; /* Länge des Bitstrings */
 	node[] nh; /* Nachbarschaft von this */
+	float[] nh_identifier;
+	string[] nh_rs;
 
 	/* Konstruktor */
 	init() {
@@ -37,12 +39,12 @@ SkipNode {
 	}
 	
 	/* Gibt den Prefix der Länge I von V zurück */
-	prefix string(node V, int I) {
-		return sub_str(getBitstring(h1(id(V))), 0, I);
+	prefix string(string V, int I) {
+		return sub_str(V, 0, I);
 	}
 	
 	/* Ermittelt den größten gemeinsamen Prefix von V und W */
-	commonPrefix int(node V, node W) {
+	commonPrefix int(string V, string W) {
 		int i;
 		for (i = RS_LENGTH; i > 0; i--) {
 			if (prefix(V, i) == prefix(W, i)) {
@@ -56,7 +58,7 @@ SkipNode {
 	level int() {
 		int max = 0;
 		for (node w : nh) {
-			int tmp = commonPrefix(this, w);
+			int tmp = commonPrefix(rs, nh_rs[id(w)]);
 			if (tmp > max) {
 				max = tmp;
 			}
@@ -96,7 +98,7 @@ SkipNode {
 				int argmax = 0;
 				node max;
 				for (node x : nh) {
-					int tmp = commonPrefix(w, x);
+					int tmp = commonPrefix(nh_rs[id(w)], nh_rs[id(x)]);
 					if (argmax <= tmp) {
 						argmax = tmp;
 						max = x;
@@ -109,20 +111,27 @@ SkipNode {
 	
 	/* Fügt X in nh ein */
 	build(node X) {
+		if (X == this) {
+			return;
+		}
 		if (nh[id(X)] != null) {
 			checkNeighbourhood();
 		}
 		else {
 			nh[id(X)] = X;
+			nh_identifier[id(X)] = h(id(X));
+			nh_rs[id(X)] = getBitstring(h1(id(X)));
 			if (checkNode(X) == true) {
 				checkNeighbourhood();
 			}
 			else {
 				nh <[id(X)]<;
+				nh_identifier <[id(X)]<;
+				nh_rs <[id(X)]<;
 				int argmax = 0;
 				node max;
 				for (node w : nh) {
-					int tmp = commonPrefix(X, w);
+					int tmp = commonPrefix(nh_rs[id(X)], nh_rs[id(w)]);
 					if (argmax <= tmp) {
 						argmax = tmp;
 						max = w;
@@ -138,9 +147,9 @@ SkipNode {
 		bool needed = false;
 		int i;
 		for (i = 0; i <= level(); i++) {
-			if (prefix(this, i) == prefix(W, i)
-				& (farthestPred(i) == null | h(id(W)) >= h(id(farthestPred(i)))) 
-				& (farthestSucc(i) == null | h(id(W)) <= h(id(farthestSucc(i))))) {
+			if (prefix(rs, i) == prefix(getBitstring(h1(id(W))), i)
+				& (farthestPred(i) == null | nh_identifier[id(W)] >= nh_identifier[id(farthestPred(i))]) 
+				& (farthestSucc(i) == null | nh_identifier[id(W)] <= nh_identifier[id(farthestSucc(i))])) {
 				needed = true;
 				break;
 			}
@@ -155,9 +164,9 @@ SkipNode {
 		node argmin;
 		float min = 1.0;
 		for (node u : preds) {
-			if ((prefix(this, I) + B) == prefix(u, I + 1) & h(id(u)) <= min) {
+			if ((prefix(rs, I) + B) == prefix(nh_rs[id(u)], I + 1) & nh_identifier[id(u)] <= min) {
 				argmin = u;
-				min = h(id(u));
+				min = nh_identifier[id(u)];
 			}
 		}
 		preds <<<<;
@@ -169,7 +178,7 @@ SkipNode {
 		node pred0 = farthestPredB(I, 0);
 		node pred1 = farthestPredB(I, 1);
 		
-		if (h(id(pred0)) < h(id(pred1))) {
+		if (nh_identifier[id(pred0)] < nh_identifier[id(pred1)]) {
 			return pred0;
 		}
 		else {
@@ -184,9 +193,9 @@ SkipNode {
 		node argmax;
 		float max = 0.0;
 		for (node u : succs) {
-			if ((prefix(this, I) + B) == prefix(u, I + 1) & h(id(u)) >= max) {
+			if ((prefix(rs, I) + B) == prefix(nh_rs[id(u)], I + 1) & nh_identifier[id(u)] >= max) {
 				argmax = u;
-				max = h(id(u));
+				max = nh_identifier[id(u)];
 			}
 		}
 		succs <<<<;
@@ -198,7 +207,7 @@ SkipNode {
 		node succ0 = farthestSuccB(I, 0);
 		node succ1 = farthestSuccB(I, 1);
 		
-		if (h(id(succ0)) > h(id(succ1))) {
+		if (nh_identifier[id(succ0)] > nh_identifier[id(succ1)]) {
 			return succ0;
 		}
 		else {
@@ -260,7 +269,7 @@ SkipNode {
 	neighbours(int I, node[] A) {
 		A <<<<;
 		for (node u : nh) {
-			if (commonPrefix(this, u) == I) {
+			if (commonPrefix(rs, nh_rs[id(u)]) == I) {
 				A >> u;
 			}
 		}
@@ -270,7 +279,7 @@ SkipNode {
 	predecessors(int I, node[] A) {
 		neighbours(I, A);
 		for (node u : A) {
-			if (h(id(u)) < identifier) {
+			if (nh_identifier[id(u)] < identifier) {
 				A >> u;
 			}
 		}
@@ -283,9 +292,9 @@ SkipNode {
 		node argmax;
 		float max = 0.0;
 		for (node u : list) {
-			if (h(id(u)) > max) {
+			if (nh_identifier[id(u)] > max) {
 				argmax = u;
-				max = h(id(u));
+				max = nh_identifier[id(u)];
 			}
 		}
 		list <<<<;
@@ -296,7 +305,7 @@ SkipNode {
 	successors(int I, node[] A) {
 		neighbours(I, A);
 		for (node u : A) {
-			if (h(id(u)) > identifier) {
+			if (nh_identifier[id(u)] > identifier) {
 				A >> u;
 			}
 		}
@@ -309,9 +318,9 @@ SkipNode {
 		node argmin;
 		float min = 1.0;
 		for (node u : list) {
-			if (h(id(u)) < min) {
+			if (nh_identifier[id(u)] < min) {
 				argmin = u;
-				min = h(id(u));
+				min = nh_identifier[id(u)];
 			}
 		}
 		list <<<<;
