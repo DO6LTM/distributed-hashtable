@@ -291,8 +291,8 @@ SkipNode {
 		C <<<<;
 		for (node u : nh) {
 			if (u != null) {
-				if (commonPrefix(rs, nh_rs[id(u)]) == I & A[length(A)-1] != u) { /*TODO*/
-					A >> u;
+				if (commonPrefix(rs, nh_rs[id(u)]) == I & C[length(C)-1] != u) { /*TODO*/
+					C >> u;
 				}
 			}
 		}
@@ -306,7 +306,6 @@ SkipNode {
 			if (u != null & u != this) {
 				if (nh_identifier[id(u)] < identifier) {
 					A >> u;
-					print("pred " + A[length(A)-1]);
 				}
 			}
 		}
@@ -318,7 +317,6 @@ SkipNode {
 		node<> preds;
 		preds <<<<;
 		predecessors(I, preds);
-		print("length preds " + length(preds));
 		node argmax;
 		float max = 0.0;
 		for (node u : preds) {
@@ -345,8 +343,9 @@ SkipNode {
 	
 	/* Gibt den nähesten Nachfolger für ein Level I zurück */
 	closestSucc node(int I) {
-		node[] list;
-		successors(I, list);
+		node<> succs;
+		succs <<<<;
+		successors(I, succs);
 		node argmin;
 		float min = 1.0;
 		for (node u : succs) {
@@ -391,7 +390,6 @@ SkipNode {
 			else {
 				len = commonPrefix(rs, rs_x);
 			}
-			
 			node w = farthestPredB(len, sub_str(rs_x,len,len+1));
 			if (w == null) {
 				w = farthestSuccB(len, sub_str(rs_x,len,len+1));
