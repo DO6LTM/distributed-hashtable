@@ -325,13 +325,13 @@ SkipNode {
 			right[0] = null;
 		}
 		/* 1a linearisiere Nachbarknoten */
-		int i;
+		/*int i;
 		for (i = 1; i < R_LENGTH/8; i++) {
 			if (timeout_counter % 100 == 0) {
 				update_range(i);
 			}
 			if (timeout_counter % 100 == 50) {
-				/*quicksort(0, n_length[i]-1, n, i);
+				quicksort(0, n_length[i]-1, n, i);
 				int j;
 				for (j = 0; j < n_length[i]; j++) {
 					if (h(id(n[i][j])) < hash_value) {
@@ -358,9 +358,9 @@ SkipNode {
 							break;
 						}
 					}
-				}*/
+				}
 			}
-		}
+		}*/
 		
 		/* 1b überbrück Nachbarknoten */
 	}
