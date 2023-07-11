@@ -245,21 +245,20 @@ SkipNode {
 	/* Stellt den Nachbarknoten die direkt Vorgänger und Nachfolger für jedes Level vor */
 	introduceClosestNeighbours() {
 		int i;
+		node[] list_neighbours;
 		for (i = 0; i <= level(); i++) {
-			node[] list_neighbours;
 			neighbours(i, list_neighbours);
 			if (closestPred(i) != null) {
-				print("closestPred fuer i=" + i + " : " + closestPred(i));
 				for (node w : list_neighbours) {
 					w -> build(closestPred(i));
 				}
 			}
 			if (closestSucc(i) != null) {
-				print("closestSucc fuer i=" + i + " : " + closestSucc(i));
 				for (node w : list_neighbours) {
 					w -> build(closestSucc(i));
 				}
 			}
+			list_neighbours <<<<;
 		}
 	}
 	
@@ -292,7 +291,7 @@ SkipNode {
 		A <<<<;
 		for (node u : nh) {
 			if (u != null) {
-				if (commonPrefix(rs, nh_rs[id(u)]) == I) {
+				if (commonPrefix(rs, nh_rs[id(u)]) == I & A[length(A)-1] != u) { /*TODO*/
 					A >> u;
 				}
 			}
@@ -303,7 +302,7 @@ SkipNode {
 	predecessors(int I, node[] A) {
 		neighbours(I, A);
 		for (node u : A) {
-			if (u != null) {
+			if (u != null & u != this) {
 				if (nh_identifier[id(u)] < identifier) {
 					A >> u;
 				}
@@ -331,8 +330,10 @@ SkipNode {
 	successors(int I, node[] A) {
 		neighbours(I, A);
 		for (node u : A) {
-			if (nh_identifier[id(u)] > identifier) {
-				A >> u;
+			if (u != null & u != this) {
+				if (nh_identifier[id(u)] > identifier) {
+					A >> u;
+				}
 			}
 		}
 	}
@@ -340,7 +341,7 @@ SkipNode {
 	/* Gibt den nähesten Nachfolger für ein Level I zurück */
 	closestSucc node(int I) {
 		node[] list;
-		predecessors(I, list);
+		successors(I, list);
 		node argmin;
 		float min = 1.0;
 		for (node u : list) {
