@@ -152,8 +152,6 @@ SkipNode {
 			if (prefix(rs, i) == prefix(getBitstring(h1(id(W))), i)
 				& (farthestPred(i) == null | nh_identifier[id(W)] >= nh_identifier[id(farthestPred(i))]) 
 				& (farthestSucc(i) == null | nh_identifier[id(W)] <= nh_identifier[id(farthestSucc(i))])) {
-				
-				print(id(W) + " liegt in Range " + i + " von " + id(this));
 				needed = true;
 				break;
 			}
@@ -162,7 +160,7 @@ SkipNode {
 	}
 	
 	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh und einen Bit B */
-	farthestPredB node(int I, int B) {
+	farthestPredB node(int I, string B) {
 		node[] preds;
 		predecessors(I, preds);
 		node argmin;
@@ -179,8 +177,8 @@ SkipNode {
 	
 	/* Ermittelt den entferntesten Vorgänger für ein Level I aus nh */
 	farthestPred node(int I) {
-		node pred0 = farthestPredB(I, 0);
-		node pred1 = farthestPredB(I, 1);
+		node pred0 = farthestPredB(I, "0");
+		node pred1 = farthestPredB(I, "1");
 		
 		if (pred0 == null | pred1 == null) {
 			return null;
@@ -195,7 +193,7 @@ SkipNode {
 	}
 	
 	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh und einen Bit B */
-	farthestSuccB node(int I, int B) {
+	farthestSuccB node(int I, string B) {
 		node[] succs;
 		successors(I, succs);
 		node argmax;
@@ -212,8 +210,8 @@ SkipNode {
 	
 	/* Ermittelt den entferntesten Nachfolger für ein Level I aus nh */
 	farthestSucc node(int I) {
-		node succ0 = farthestSuccB(I, 0);
-		node succ1 = farthestSuccB(I, 1);
+		node succ0 = farthestSuccB(I, "0");
+		node succ1 = farthestSuccB(I, "1");
 		
 		if (succ0 == null | succ1 == null) {
 			return null;
@@ -355,6 +353,26 @@ SkipNode {
 			nh[id(X)] = null;
 			nh_identifier[id(X)] = NaN;
 			nh_rs[id(X)] = "";
+		}
+	}
+	
+	/* Stelle lookup-Anfrage an Knoten X */
+	lookup(node X) {
+		if (id(this) != id(X)) {
+			string rs_x = getBitstring(h1(id(X)));
+			int len;
+			if (level() < commonPrefix(rs, rs_x)) {
+				len = level();
+			}
+			else {
+				len = commonPrefix(rs, rs_x);
+			}
+			
+			node w = farthestPredB(len, sub_str(rs_x,len,len+1));
+			if (w == null) {
+				w = farthestSuccB(len, sub_str(rs_x,len,len+1));
+			}
+			w -> lookup(X);
 		}
 	}
 }
