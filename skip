@@ -286,9 +286,9 @@ SkipNode {
 		}
 	}
 	
-	/* Filtert alle Nachbarknoten für ein Level I in eine Liste A */
-	neighbours(int I, node[] A) {
-		A <<<<;
+	/* Filtert alle Nachbarknoten für ein Level I in eine Liste C */
+	neighbours(int I, node<> C) {
+		C <<<<;
 		for (node u : nh) {
 			if (u != null) {
 				if (commonPrefix(rs, nh_rs[id(u)]) == I & A[length(A)-1] != u) { /*TODO*/
@@ -299,30 +299,35 @@ SkipNode {
 	}
 	
 	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A */
-	predecessors(int I, node[] A) {
+	predecessors(int I, node<> A) {
+		A <<<<;
 		neighbours(I, A);
 		for (node u : A) {
 			if (u != null & u != this) {
 				if (nh_identifier[id(u)] < identifier) {
 					A >> u;
+					print("pred " + A[length(A)-1]);
 				}
 			}
 		}
+
 	}
 	
 	/* Gibt den nähesten Vorgänger für ein Level I zurück */
 	closestPred node(int I) {
-		node[] list;
-		predecessors(I, list);
+		node<> preds;
+		preds <<<<;
+		predecessors(I, preds);
+		print("length preds " + length(preds));
 		node argmax;
 		float max = 0.0;
-		for (node u : list) {
+		for (node u : preds) {
 			if (nh_identifier[id(u)] > max) {
 				argmax = u;
 				max = nh_identifier[id(u)];
 			}
 		}
-		list <<<<;
+		preds <<<<;
 		return argmax;
 	}
 	
@@ -344,13 +349,13 @@ SkipNode {
 		successors(I, list);
 		node argmin;
 		float min = 1.0;
-		for (node u : list) {
+		for (node u : succs) {
 			if (nh_identifier[id(u)] < min) {
 				argmin = u;
 				min = nh_identifier[id(u)];
 			}
 		}
-		list <<<<;
+		succs <<<<;
 		return argmin;
 	}
 	
