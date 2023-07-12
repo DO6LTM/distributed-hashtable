@@ -454,8 +454,11 @@ SkipNode {
 	}
 	
 	/* Stelle lookup-Anfrage an Knoten X */
-	/*lookup(node X) {
-		if (id(this) != id(X)) {
+	lookup(node X) {
+		if (id(this) == id(X)) {
+			print("Knoten " + id(X) + " gefunden!");
+		}
+		else {
 			string rs_x = getBitstring(h1(id(X)));
 			int len;
 			if (level() < commonPrefix(rs, rs_x)) {
@@ -464,11 +467,11 @@ SkipNode {
 			else {
 				len = commonPrefix(rs, rs_x);
 			}
-			node w = farthestPredB(len, sub_str(rs_x,len,len+1));
+			node w = predRangeB(len, sub_str(rs_x,len,len+1));
 			if (w == null) {
-				w = farthestSuccB(len, sub_str(rs_x,len,len+1));
+				w = succRangeB(len, sub_str(rs_x,len,len+1));
 			}
 			w -> lookup(X);
 		}
-	}*/
+	}
 }
