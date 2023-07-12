@@ -176,6 +176,7 @@ SkipNode {
 		return needed;
 	}
 	
+	/* Ermittelt den größten Vorgänger für Level I mit prefix * B */
 	predRangeB node(int I, string B) {
 		node<> preds;
 		predecessors(I, preds);
@@ -196,6 +197,8 @@ SkipNode {
 		}
 	}
 	
+		
+	/* Ermittelt den Vorgänger für Range von Level I */
 	predRange node(int I) {
 		node pred0 = predRangeB(I, "0");
 		node pred1 = predRangeB(I, "1");
@@ -212,6 +215,7 @@ SkipNode {
 		}
 	}
 	
+	/* Ermittelt den kleinsten Nachfolger für Level I mit prefix * B */
 	succRangeB node(int I, string B) {
 		node<> succs;
 		successors(I, succs);
@@ -232,6 +236,7 @@ SkipNode {
 		}
 	}
 	
+	/* Ermittelt den Nachfolger für Range von Level I */
 	succRange node(int I) {
 		node succ0 = succRangeB(I, "0");
 		node succ1 = succRangeB(I, "1");
