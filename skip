@@ -291,7 +291,7 @@ SkipNode {
 		C <<<<;
 		for (node u : nh) {
 			if (u != null) {
-				if (commonPrefix(rs, nh_rs[id(u)]) == I & C[length(C)-1] != u) { /*TODO*/
+				if (commonPrefix(rs, nh_rs[id(u)]) >= I) {
 					C >> u;
 				}
 			}
@@ -299,13 +299,14 @@ SkipNode {
 	}
 	
 	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A */
-	predecessors(int I, node<> A) {
-		A <<<<;
-		neighbours(I, A);
-		for (node u : A) {
+	predecessors(int I, node<> B) {
+		B <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
 			if (u != null & u != this) {
 				if (nh_identifier[id(u)] < identifier) {
-					A >> u;
+					B >> u;
 				}
 			}
 		}
@@ -330,9 +331,11 @@ SkipNode {
 	}
 	
 	/* Filtert alle Nachfolger der Nachbarknoten für ein Level I in eine Liste A */
-	successors(int I, node[] A) {
-		neighbours(I, A);
-		for (node u : A) {
+	successors(int I, node<> A) {
+		A <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
 			if (u != null & u != this) {
 				if (nh_identifier[id(u)] > identifier) {
 					A >> u;
