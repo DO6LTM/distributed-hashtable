@@ -166,7 +166,8 @@ SkipNode {
 		bool needed = false;
 		int i;
 		for (i = 0; i <= level(); i++) {
-			if ((predRange(i) == null | nh_identifier[id(W)] >= nh_identifier[id(predRange(i))]) 
+			if (prefix(rs, i) == prefix(nh_rs[id(W)], i)
+				& (predRange(i) == null | nh_identifier[id(W)] >= nh_identifier[id(predRange(i))]) 
 				& (succRange(i) == null | nh_identifier[id(W)] <= nh_identifier[id(succRange(i))])) {
 				needed = true;
 				break;
