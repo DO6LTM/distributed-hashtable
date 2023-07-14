@@ -5,6 +5,7 @@ SkipNode {
 	node[] nh; /* Nachbarschaft von this */
 	float[] nh_identifier;
 	string[] nh_rs;
+	node cycle red; /* Kreiskante auf Level 0 */
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */
@@ -26,6 +27,87 @@ SkipNode {
 		introduceNode();
 		linearizeNeighbours();
 		introduceClosestNeighbours();
+		
+		/* Kreiskante bauen */
+		node left = closestPred(0);
+		node right = closestSucc(0);
+		if (cycle == null) {
+			if (left == null & right != null) {
+				right -> introduceCycle(this); /* Neue Kreiskantenanfrage */
+			}
+			if (right == null & left != null) {
+				left -> introduceCycle(this);
+			}
+		}
+		if (cycle != null) {
+			if (left != null & h(id(cycle)) > identifier) {
+				left -> introduceCycle(cycle); /* Weiterleitung */
+				cycle = null;
+			}
+			if (right != null & h(id(cycle)) < identifier) {
+				right -> introduceCycle(cycle);
+				cycle = null;
+			}
+			if ((left == null & h(id(cycle)) > identifier) | (right == null & h(id(cycle)) < identifier)) {
+				cycle -> introduceCycle(this); /* Rückwärtskante */
+			}
+		}
+	}
+	
+	introduceCycle(node V) {
+		if (cycle == null) {
+			node left = closestPred(0);
+			node right = closestSucc(0);
+			if ((h(id(V)) < identifier & right == null) | (h(id(V)) > identifier & left == null)) {
+				cycle = V;
+			}
+			if (h(id(V)) < identifier & right != null) {
+				right -> introduceCycle(V);
+			}
+			if (h(id(V)) > identifier & left != null) {
+				left -> introduceCycle(V);
+			}
+		}
+		else if (cycle != null) {
+			if ((h(id(V)) < identifier & h(id(cycle)) < identifier) | (h(id(V)) > identifier & h(id(cycle)) > identifier)) {
+				/* v liegt auf derselben Seite von u wie cycle */
+				node w1;
+				node w2;
+				if (h(id(V)) < identifier) {
+					/* Beide liegen links von u */
+					if (h(id(cycle)) < h(id(V))) {
+						/* cycle liegt weiter weg */
+						w1 = cycle;
+						w2 = V;
+					}
+					else {
+						w1 = V;
+						w2 = cycle;
+					}
+				}
+				else {
+					/* Beide liegen rechts von u */
+					if (h(id(cycle)) > h(id(V))) {
+						/* cycle liegt weiter weg */
+						w1 = cycle;
+						w2 = V;
+					}
+					else {
+						w1 = V;
+						w2 = cycle;
+					}
+				}
+				
+				cycle = w1;
+				this -> build(w2);
+				w1 -> build(w2);
+			}
+			else {
+				this -> build(V);
+				this -> build(cycle);
+				cycle = null;
+			}
+		}
 	}
 	
 	/* Berechnet einen Bitstring der Länge RS_LENGTH anhand des Eingabewertes H */
@@ -264,7 +346,7 @@ SkipNode {
 		}
 	}
 	
-	/* Stellt den Nachbarknoten die direkt Vorgänger und Nachfolger für jedes Level vor */
+	/* Stellt den Nachbarknoten die direkten Vorgänger und Nachfolger für jedes Level vor */
 	introduceClosestNeighbours() {
 		int i;
 		node<> preds;
@@ -416,29 +498,11 @@ SkipNode {
 		return argmax;
 	}
 	
-	/* Gibt den weitesten Vorgänger für ein Level I zurück */
-	farthestPred node(int I) {
-		node<> preds;
-		preds <<<<;
-		successors(I, preds);
-		node argmin;
-		float min = 1.0;
-		for (node u : preds) {
-			if (nh_identifier[id(u)] < min) {
-				argmin = u;
-				min = nh_identifier[id(u)];
-			}
-		}
-		preds <<<<;
-		return argmin;
-	}
-	
 	/* Gibt den nächsten Vorgänger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit größtem h zurück. */
 	pred node() {
 		node pred_node = closestPred(0);
 		if (pred_node == null) {
-		/* Suche am weitesten entfernten Nachfolger */
-			pred_node = farthestSucc(0);
+			pred_node = cycle;
 		}
 		return pred_node;
 	}
@@ -474,29 +538,11 @@ SkipNode {
 		return argmin;
 	}
 	
-	/* Gibt den weitesten Nachfolger für ein Level I zurück */
-	farthestSucc node(int I) {
-		node<> succs;
-		succs <<<<;
-		successors(I, succs);
-		node argmax;
-		float max = 0.0;
-		for (node u : succs) {
-			if (nh_identifier[id(u)] > max) {
-				argmax = u;
-				max = nh_identifier[id(u)];
-			}
-		}
-		succs <<<<;
-		return argmax;
-	}
-	
 	/* Gibt den nächsten Nachfolger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit kleinstem h zurück. */
 	succ node() {
 		node succ_node = closestSucc(0);
 		if (succ_node == null) {
-		/* Suche am weitesten entfernten Vorgänger */
-			succ_node = farthestPred(0);
+			succ_node = cycle;
 		}
 		return succ_node;
 	}
