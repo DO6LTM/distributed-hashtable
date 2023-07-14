@@ -55,27 +55,29 @@ SkipNode {
 	}
 	
 	introduceCycle(node V) {
+		float identifier_V = h(id(V));
+		float identifier_Cycle = h(id(cycle));
 		if (cycle == null) {
 			node left = closestPred(0);
 			node right = closestSucc(0);
-			if ((h(id(V)) < identifier & right == null) | (h(id(V)) > identifier & left == null)) {
+			if ((identifier_V < identifier & right == null) | (identifier_V > identifier & left == null)) {
 				cycle = V;
 			}
-			if (h(id(V)) < identifier & right != null) {
+			if (identifier_V < identifier & right != null) {
 				right -> introduceCycle(V);
 			}
-			if (h(id(V)) > identifier & left != null) {
+			if (identifier_V > identifier & left != null) {
 				left -> introduceCycle(V);
 			}
 		}
 		else if (cycle != null) {
-			if ((h(id(V)) < identifier & h(id(cycle)) < identifier) | (h(id(V)) > identifier & h(id(cycle)) > identifier)) {
+			if ((identifier_V < identifier & identifier_Cycle < identifier) | (identifier_V > identifier & identifier_Cycle > identifier)) {
 				/* v liegt auf derselben Seite von u wie cycle */
 				node w1;
 				node w2;
-				if (h(id(V)) < identifier) {
+				if (identifier_V < identifier) {
 					/* Beide liegen links von u */
-					if (h(id(cycle)) < h(id(V))) {
+					if (identifier_Cycle < identifier_V) {
 						/* cycle liegt weiter weg */
 						w1 = cycle;
 						w2 = V;
@@ -87,7 +89,7 @@ SkipNode {
 				}
 				else {
 					/* Beide liegen rechts von u */
-					if (h(id(cycle)) > h(id(V))) {
+					if (identifier_Cycle > identifier_V) {
 						/* cycle liegt weiter weg */
 						w1 = cycle;
 						w2 = V;
