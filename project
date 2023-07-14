@@ -5,6 +5,9 @@ SkipNode {
 	node[] nh; /* Nachbarschaft von this */
 	float[] nh_identifier;
 	string[] nh_rs;
+	
+	[float, int] table; /* Hashtabelle zum Speichern von Daten */
+	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */
 
 	/* Konstruktor */
 	init() {
@@ -87,6 +90,14 @@ SkipNode {
 	/* Hashfunktion h1, bildet I auf [0,1) ab. Wird genutzt um Bitstrings zu generieren. */
 	h1 float(int I) {
 		float i = hash1(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Hashfunktion g, bildet I auf [0,1) ab. Wird genutzt um Keys für Daten zu erstellen. */
+	g float(int I) {
+		float i = hash2(I);
 		i = i / MAX_INTEGER;
 		i = (i + 1) / 2;
 		return i;
@@ -257,29 +268,29 @@ SkipNode {
 	introduceClosestNeighbours() {
 		int i;
 		node<> preds;
-		node pred;
+		node pred_node;
 		node<> succs;
-		node succ;
+		node succ_node;
 		for (i = 0; i <= level(); i++) {
 			successors(i, succs);
-			pred = closestPred(i);
-			if (pred != null) {
+			pred_node = closestPred(i);
+			if (pred_node != null) {
 				for (node w : succs) {
-					w -> build(pred);
+					w -> build(pred_node);
 				}
 			}
 			succs <<<<;
-			pred = null;
+			pred_node = null;
 
 			predecessors(i, preds);
-			succ = closestSucc(i);
-			if (succ != null) {
+			succ_node = closestSucc(i);
+			if (succ_node != null) {
 				for (node w : preds) {
-					w -> build(succ);
+					w -> build(succ_node);
 				}
 			}
 			preds <<<<;
-			succ = null;
+			succ_node = null;
 		}
 	}
 	
@@ -366,7 +377,6 @@ SkipNode {
 		C <<<<;
 		for (node u : nh) {
 			if (u != null) {
-				/*if (commonPrefix(rs, nh_rs[id(u)]) == I) { /* TODO vielleicht >= */
 				if (prefix(rs, I) == prefix(nh_rs[id(u)], I)) {
 					C >> u;
 				}
@@ -389,7 +399,7 @@ SkipNode {
 
 	}
 	
-	/* Gibt den nähesten Vorgänger für ein Level I zurück */
+	/* Gibt den nächsten Vorgänger für ein Level I zurück */
 	closestPred node(int I) {
 		node<> preds;
 		preds <<<<;
@@ -406,6 +416,33 @@ SkipNode {
 		return argmax;
 	}
 	
+	/* Gibt den weitesten Vorgänger für ein Level I zurück */
+	farthestPred node(int I) {
+		node<> preds;
+		preds <<<<;
+		successors(I, preds);
+		node argmin;
+		float min = 1.0;
+		for (node u : preds) {
+			if (nh_identifier[id(u)] < min) {
+				argmin = u;
+				min = nh_identifier[id(u)];
+			}
+		}
+		preds <<<<;
+		return argmin;
+	}
+	
+	/* Gibt den nächsten Vorgänger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit größtem h zurück. */
+	pred node() {
+		node pred_node = closestPred(0);
+		if (pred_node == null) {
+		/* Suche am weitesten entfernten Nachfolger */
+			pred_node = farthestSucc(0);
+		}
+		return pred_node;
+	}
+	
 	/* Filtert alle Nachfolger der Nachbarknoten für ein Level I in eine Liste A */
 	successors(int I, node<> A) {
 		A <<<<;
@@ -420,7 +457,7 @@ SkipNode {
 		}
 	}
 	
-	/* Gibt den nähesten Nachfolger für ein Level I zurück */
+	/* Gibt den nächsten Nachfolger für ein Level I zurück */
 	closestSucc node(int I) {
 		node<> succs;
 		succs <<<<;
@@ -435,6 +472,33 @@ SkipNode {
 		}
 		succs <<<<;
 		return argmin;
+	}
+	
+	/* Gibt den weitesten Nachfolger für ein Level I zurück */
+	farthestSucc node(int I) {
+		node<> succs;
+		succs <<<<;
+		successors(I, succs);
+		node argmax;
+		float max = 0.0;
+		for (node u : succs) {
+			if (nh_identifier[id(u)] > max) {
+				argmax = u;
+				max = nh_identifier[id(u)];
+			}
+		}
+		succs <<<<;
+		return argmax;
+	}
+	
+	/* Gibt den nächsten Nachfolger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit kleinstem h zurück. */
+	succ node() {
+		node succ_node = closestSucc(0);
+		if (succ_node == null) {
+		/* Suche am weitesten entfernten Vorgänger */
+			succ_node = farthestPred(0);
+		}
+		return succ_node;
 	}
 	
 	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
