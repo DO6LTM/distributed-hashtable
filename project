@@ -592,4 +592,55 @@ SkipNode {
 			w -> lookup(X);
 		}
 	}
+	
+	/*************************************************************************************
+	
+							Funktionen zur Verwaltung der Hashtabelle
+	
+	*************************************************************************************/
+	
+	/* Suchoperation zum Ermitteln eines Knotens für Hashwert X */
+	search(float X) {
+		node pred_node = pred();
+		node succ_node = succ();
+		float pred_float = h(id(pred_node));
+		float succ_float = h(id(succ_node));
+		
+		print("Search in " + id(this));
+		if (succ_float < identifier & X < succ_float) {
+			print("Knoten " + id(this) + " hält " + X);
+		}
+		else if (pred_float > identifier & X > pred_float) {
+			pred_node -> search(X);
+		}
+		else if (pred_float > X | X >= succ_float) {
+			/* Sei v der Knoten aus nh, der am nächsten an X liegt, ohne das X übersprungen wird */
+			node v;
+			float diff = 1.0;
+			int i;
+			for (i = 0; i < length(nh); i++) {
+				if (nh[i] != null & nh[i] != this) {
+					if ((X > identifier & X - nh_identifier[i] < diff & X - nh_identifier[i] >= 0) |
+						(X < identifier & nh_identifier[i] - X < diff & nh_identifier[i] - X >= 0)) {
+						v = nh[i];
+						if (X > identifier) {
+							diff = X - nh_identifier[i];
+						}
+						else {
+							diff = nh_identifier[i] - X;
+						}
+					}
+				}
+			}
+			v -> search(X);
+		}
+		else {
+			if (X < identifier | (X > identifier & pred_float > identifier) | (X > identifier & succ_float < identifier)) {
+				pred_node -> search(X);
+			}
+			else {
+				print("Knoten " + id(this) + " hält " + X);
+			}
+		}
+	}
 }
