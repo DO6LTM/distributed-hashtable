@@ -40,15 +40,16 @@ SkipNode {
 			}
 		}
 		if (cycle != null) {
-			if (left != null & h(id(cycle)) > identifier) {
+			float identifier_Cycle = h(id(cycle));
+			if (left != null & identifier_Cycle > identifier) {
 				left -> introduceCycle(cycle); /* Weiterleitung */
 				cycle = null;
 			}
-			if (right != null & h(id(cycle)) < identifier) {
+			if (right != null & identifier_Cycle < identifier) {
 				right -> introduceCycle(cycle);
 				cycle = null;
 			}
-			if ((left == null & h(id(cycle)) > identifier) | (right == null & h(id(cycle)) < identifier)) {
+			if ((left == null & identifier_Cycle > identifier) | (right == null & identifier_Cycle < identifier)) {
 				cycle -> introduceCycle(this); /* Rückwärtskante */
 			}
 		}
