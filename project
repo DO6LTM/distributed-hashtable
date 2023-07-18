@@ -7,6 +7,7 @@ SkipNode {
 	string[] nh_rs;
 	node cycle red; /* Kreiskante auf Level 0 */
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
+	int maxLevel;
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 
@@ -26,6 +27,7 @@ SkipNode {
 		if (!leaving) {
 			checkNeighbourhood();
 			introduceNode();
+			maxLevel = level();
 			linearizeNeighbours();
 			introduceClosestNeighbours();
 			
@@ -319,10 +321,13 @@ SkipNode {
 	checkNode bool(node W) {
 		bool needed = false;
 		int i;
-		for (i = 0; i <= level(); i++) {
+		maxLevel = level();
+		for (i = 0; i <= maxLevel; i++) {
+			node pR = predRange(i);
+			node sR = succRange(i);
 			if (prefix(rs, i) == prefix(nh_rs[id(W)], i)
-				& (predRange(i) == null | nh_identifier[id(W)] >= nh_identifier[id(predRange(i))]) 
-				& (succRange(i) == null | nh_identifier[id(W)] <= nh_identifier[id(succRange(i))])) {
+				& (pR == null | nh_identifier[id(W)] >= nh_identifier[id(pR)]) 
+				& (sR == null | nh_identifier[id(W)] <= nh_identifier[id(sR)])) {
 				needed = true;
 				break;
 			}
@@ -414,7 +419,7 @@ SkipNode {
 		node pred_node;
 		node<> succs;
 		node succ_node;
-		for (i = 0; i <= level(); i++) {
+		for (i = 0; i <= maxLevel; i++) {
 			successors(i, succs);
 			pred_node = closestPred(i);
 			if (pred_node != null) {
@@ -440,7 +445,7 @@ SkipNode {
 	/* Linearisiere Nachbarknoten */
 	linearizeNeighbours() {
 		int i;
-		for (i = 0; i <= level(); i++) {
+		for (i = 0; i <= maxLevel; i++) {
 			node[] preds;
 			predecessors(i, preds);
 			sort(preds);
@@ -518,9 +523,10 @@ SkipNode {
 	/* Filtert alle Nachbarknoten für ein Level I in eine Liste C */
 	neighbours(int I, node<> C) {
 		C <<<<;
+		string ownPrefixI = prefix(rs, I);
 		for (node u : nh) {
 			if (u != null) {
-				if (prefix(rs, I) == prefix(nh_rs[id(u)], I)) {
+				if (ownPrefixI == prefix(nh_rs[id(u)], I)) {
 					C >> u;
 				}
 			}
@@ -616,8 +622,9 @@ SkipNode {
 		else {
 			string rs_x = getBitstring(h1(id(X)));
 			int len;
-			if (level() < commonPrefix(rs, rs_x)) {
-				len = level();
+			maxLevel = level();
+			if (maxLevel < commonPrefix(rs, rs_x)) {
+				len = maxLevel;
 			}
 			else {
 				len = commonPrefix(rs, rs_x);
