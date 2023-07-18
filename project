@@ -6,6 +6,7 @@ SkipNode {
 	float[] nh_identifier;
 	string[] nh_rs;
 	node cycle red; /* Kreiskante auf Level 0 */
+	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */ /* TODO muss implementiert werden */
@@ -23,35 +24,89 @@ SkipNode {
 	
 	/* Periodisches Timeout */
 	timeout() {
-		checkNeighbourhood();
-		introduceNode();
-		linearizeNeighbours();
-		introduceClosestNeighbours();
-		
-		/* Kreiskante bauen */
-		node left = closestPred(0);
-		node right = closestSucc(0);
-		if (cycle == null) {
-			if (left == null & right != null) {
-				right -> introduceCycle(this); /* Neue Kreiskantenanfrage */
+		if (!leaving) {
+			checkNeighbourhood();
+			introduceNode();
+			linearizeNeighbours();
+			introduceClosestNeighbours();
+			
+			/* Kreiskante bauen */
+			node left = closestPred(0);
+			node right = closestSucc(0);
+			if (cycle == null) {
+				if (left == null & right != null) {
+					right -> introduceCycle(this); /* Neue Kreiskantenanfrage */
+				}
+				if (right == null & left != null) {
+					left -> introduceCycle(this);
+				}
 			}
-			if (right == null & left != null) {
-				left -> introduceCycle(this);
+			if (cycle != null) {
+				float identifier_Cycle = h(id(cycle));
+				if (left != null & identifier_Cycle > identifier) {
+					left -> introduceCycle(cycle); /* Weiterleitung */
+					cycle = null;
+				}
+				if (right != null & identifier_Cycle < identifier) {
+					right -> introduceCycle(cycle);
+					cycle = null;
+				}
+				if ((left == null & identifier_Cycle > identifier) | (right == null & identifier_Cycle < identifier)) {
+					cycle -> introduceCycle(this); /* Rückwärtskante */
+				}
 			}
 		}
-		if (cycle != null) {
-			float identifier_Cycle = h(id(cycle));
-			if (left != null & identifier_Cycle > identifier) {
-				left -> introduceCycle(cycle); /* Weiterleitung */
+		else { /* Leaving */
+			node pred_node = pred();
+			pred_node -> concat(table);
+		
+			node<> preds;
+			predecessors(0, preds);
+			for (node w : preds) {
+				w -> reverse(0, this);
+			}
+			
+			node<> succs;
+			successors(0, succs);
+			for (node w : succs) {
+				w -> reverse(1, this);
+			}
+			
+			if (cycle != null) {
+				if (h(id(cycle)) > identifier) {
+					cycle -> reverse(0, this);
+				}
+				else {
+					cycle -> reverse(1, this);
+				}
 				cycle = null;
 			}
-			if (right != null & identifier_Cycle < identifier) {
-				right -> introduceCycle(cycle);
+			nh <<<<;
+			nh_identifier <<<<;
+			nh_rs <<<<;
+			sleep();
+		}
+	}
+	
+	/* Funktion zum Umdrehen bzw. Löschen einer Kante nach dem FSP-Protokoll */
+	reverse(int F, node X) {
+		if (F == 1) {
+			if (!leaving) {
+				node pred_node = pred();
+				pred_node -> build(this);
+				nh[id(X)] = null;
+				nh_identifier[id(X)] = NaN;
+				nh_rs[id(X)] = "";
 				cycle = null;
 			}
-			if ((left == null & identifier_Cycle > identifier) | (right == null & identifier_Cycle < identifier)) {
-				cycle -> introduceCycle(this); /* Rückwärtskante */
-			}
+		}
+		else if (F == 0) {
+			node succ_node = succ();
+			succ_node -> build(this);
+			nh[id(X)] = null;
+			nh_identifier[id(X)] = NaN;
+			nh_rs[id(X)] = "";
+			cycle = null;
 		}
 	}
 	
@@ -550,27 +605,6 @@ SkipNode {
 		return succ_node;
 	}
 	
-	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
-	leave() {
-		for (node w : nh) {
-			if (w != null) {
-				w -> remove(this);
-			}
-		}
-		nh <<<<;
-		nh_identifier <<<<;
-		nh_rs <<<<;
-	}
-	
-	/* Entfernt einen Knoten X aus nh */
-	remove(node X) {
-		if (nh[id(X)] != null) {
-			nh[id(X)] = null;
-			nh_identifier[id(X)] = NaN;
-			nh_rs[id(X)] = "";
-		}
-	}
-	
 	/* Stelle lookup-Anfrage an Knoten X */
 	lookupNode(node X) {
 		if (id(this) == id(X)) {
@@ -710,5 +744,35 @@ SkipNode {
 	/* Löscht Datum D aus der Hashtabelle */
 	delete(int D) {
 		search(g(D), D, 2);
+	}
+	
+	/* Fügt einen Knoten zum Netzwerk hinzu, indem Build-Skip Protokoll ausgeführt wird */
+	join(node U) {
+		leaving = false;
+		U -> build(this);
+	}
+	
+	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
+	leave() {
+		leaving = true;
+	}
+	
+	/* Entfernt einen Knoten X aus nh */
+	remove(node X) {
+		if (nh[id(X)] != null) {
+			nh[id(X)] = null;
+			nh_identifier[id(X)] = NaN;
+			nh_rs[id(X)] = "";
+		}
+		if (X == cycle) {
+			cycle = null;
+		}
+	}
+	
+	/* Fügt alle Elemente aus T in die globale Hashtabelle ein */
+	concat([float, int] T) {
+		for (float key : int value : T) {
+			table[key] = value;
+		}
 	}
 }
