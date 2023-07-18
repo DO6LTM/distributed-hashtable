@@ -9,7 +9,6 @@ SkipNode {
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
-	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */ /* TODO muss implementiert werden */
 
 	/* Konstruktor */
 	init() {
@@ -756,18 +755,6 @@ SkipNode {
 	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
 	leave() {
 		leaving = true;
-	}
-	
-	/* Entfernt einen Knoten X aus nh */
-	remove(node X) {
-		if (nh[id(X)] != null) {
-			nh[id(X)] = null;
-			nh_identifier[id(X)] = NaN;
-			nh_rs[id(X)] = "";
-		}
-		if (X == cycle) {
-			cycle = null;
-		}
 	}
 	
 	/* Fügt alle Elemente aus T in die globale Hashtabelle ein */
