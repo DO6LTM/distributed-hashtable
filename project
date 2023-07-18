@@ -601,45 +601,72 @@ SkipNode {
 	
 	/* Suchoperation zum Ermitteln eines Knotens für Hashwert X */
 	search(float X) {
+		if (X < 0 | X >= 1) {
+			print("Falsche Eingabe!");
+			return;
+		}
+	
 		node pred_node = pred();
 		node succ_node = succ();
 		float pred_float = h(id(pred_node));
 		float succ_float = h(id(succ_node));
-		
-		print("Search in " + id(this));
-		if (succ_float < identifier & X < succ_float) {
-			print("Knoten " + id(this) + " hält " + X);
+
+		print("Search in " + this);
+		if (pred_float < succ_float & pred_float <= X & X < succ_float) {
+			if (X < identifier) {
+				pred_node -> search(X);
+			}
+			else {
+				print("Knoten " + id(this) + " verwaltet " + X);
+			}
 		}
-		else if (pred_float > identifier & X > pred_float) {
-			pred_node -> search(X);
+		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
+			if (pred_float > identifier) {
+				if (X < identifier | X >= pred_float) {
+					pred_node -> search(X);
+				}
+				else {
+					print("Knoten " + id(this) + " verwaltet " + X);
+				}
+			}
+			else if (succ_float < identifier){
+				if (X < identifier & X >= succ_float) {
+					pred_node -> search(X);
+				}
+				else {
+					print("Knoten " + id(this) + " verwaltet " + X);
+				}
+			}
 		}
-		else if (pred_float > X | X >= succ_float) {
-			/* Sei v der Knoten aus nh, der am nächsten an X liegt, ohne das X übersprungen wird */
-			node v;
-			float diff = 1.0;
-			int i;
-			for (i = 0; i < length(nh); i++) {
-				if (nh[i] != null & nh[i] != this) {
-					if ((X > identifier & X - nh_identifier[i] < diff & X - nh_identifier[i] >= 0) |
-						(X < identifier & nh_identifier[i] - X < diff & nh_identifier[i] - X >= 0)) {
-						v = nh[i];
-						if (X > identifier) {
+		else {
+			if (X > identifier) { /* X liegt weiter rechts */
+				/* Sei v der Knoten aus nh, der am nächsten an X liegt, ohne das X übersprungen wird */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (X - nh_identifier[i] < diff & nh_identifier[i] <= X) {
+							v = nh[i];
 							diff = X - nh_identifier[i];
 						}
-						else {
+					}
+				}
+				v -> search(X);
+			}
+			else { /* X liegt weiter links */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (nh_identifier[i] - X < diff & nh_identifier[i] >= X) {
+							v = nh[i];
 							diff = nh_identifier[i] - X;
 						}
 					}
 				}
-			}
-			v -> search(X);
-		}
-		else {
-			if (X < identifier | (X > identifier & pred_float > identifier) | (X > identifier & succ_float < identifier)) {
-				pred_node -> search(X);
-			}
-			else {
-				print("Knoten " + id(this) + " hält " + X);
+				v -> search(X);
 			}
 		}
 	}
