@@ -8,7 +8,7 @@ SkipNode {
 	node cycle red; /* Kreiskante auf Level 0 */
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
-	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */
+	int NUMBER_OF_COPIES = 1; /* Anzahl an Kopien pro Datum */ /* TODO muss implementiert werden */
 
 	/* Konstruktor */
 	init() {
@@ -572,7 +572,7 @@ SkipNode {
 	}
 	
 	/* Stelle lookup-Anfrage an Knoten X */
-	lookup(node X) {
+	lookupNode(node X) {
 		if (id(this) == id(X)) {
 			print("Knoten " + id(X) + " gefunden!");
 		}
@@ -589,7 +589,7 @@ SkipNode {
 			if (w == null) {
 				w = succRangeB(len, sub_str(rs_x,len,len+1));
 			}
-			w -> lookup(X);
+			w -> lookupNode(X);
 		}
 	}
 	
@@ -599,8 +599,8 @@ SkipNode {
 	
 	*************************************************************************************/
 	
-	/* Suchoperation zum Ermitteln eines Knotens für Hashwert X */
-	search(float X) {
+	/* Operation zum Ermitteln eines Knotens für Hashwert X von D. */
+	search(float X, int D, int F) {
 		if (X < 0 | X >= 1) {
 			print("Falsche Eingabe!");
 			return;
@@ -611,30 +611,29 @@ SkipNode {
 		float pred_float = h(id(pred_node));
 		float succ_float = h(id(succ_node));
 
-		print("Search in " + this);
 		if (pred_float < succ_float & pred_float <= X & X < succ_float) {
 			if (X < identifier) {
-				pred_node -> search(X);
+				pred_node -> search(X, D, F);
 			}
 			else {
-				print("Knoten " + id(this) + " verwaltet " + X);
+				hashtableOperation(X, D, F); /* Knoten gefunden */
 			}
 		}
 		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
 			if (pred_float > identifier) {
 				if (X < identifier | X >= pred_float) {
-					pred_node -> search(X);
+					pred_node -> search(X, D, F);
 				}
 				else {
-					print("Knoten " + id(this) + " verwaltet " + X);
+					hashtableOperation(X, D, F);
 				}
 			}
 			else if (succ_float < identifier){
 				if (X < identifier & X >= succ_float) {
-					pred_node -> search(X);
+					pred_node -> search(X, D, F);
 				}
 				else {
-					print("Knoten " + id(this) + " verwaltet " + X);
+					hashtableOperation(X, D, F);
 				}
 			}
 		}
@@ -652,7 +651,7 @@ SkipNode {
 						}
 					}
 				}
-				v -> search(X);
+				v -> search(X, D, F);
 			}
 			else { /* X liegt weiter links */
 				node v;
@@ -666,8 +665,50 @@ SkipNode {
 						}
 					}
 				}
-				v -> search(X);
+				v -> search(X, D, F);
 			}
 		}
+	}
+	
+	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen.
+	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle.
+	   0: Lookup, 1: Insert, 2: Delete */
+	hashtableOperation(float X, int D, int F) {
+		if (F == 0) { /* Lookup */
+			if (containts(table, X)) {
+				print(D + " ist in Knoten " + id(this) + " gespeichert");
+			}
+			else {
+				print(D + " befindet sich nicht in der Hashtabelle");
+			}
+		}
+		else if (F == 1) { /* Insert */
+			table[X] = D;
+			print(D + " in Knoten " + id(this) + " eingefuegt");
+		}
+		else if (F == 2) { /* Delete */
+			if (containts(table, X)) {
+				table <[X]<;
+				print(D + " aus Knoten " + id(this) + " entfernt");
+			}
+			else {
+				print(D + " befindet sich nicht in der Hashtabelle");
+			}
+		} 
+	}
+	
+	/* Prüft, ob ein Datum D in der Hashtabelle abgelegt ist */
+	lookup(int D) {
+		search(g(D), D, 0);
+	}
+	
+	/* Fügt Datum D in die Hashtabelle ein */
+	insert(int D) {
+		search(g(D), D, 1);
+	}
+	
+	/* Löscht Datum D aus der Hashtabelle */
+	delete(int D) {
+		search(g(D), D, 2);
 	}
 }
