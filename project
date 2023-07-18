@@ -110,6 +110,7 @@ SkipNode {
 		}
 	}
 	
+	/* Kreiskantenanfrage nach BuildCycle-Protokoll */
 	introduceCycle(node V) {
 		float identifier_V = h(id(V));
 		float identifier_Cycle = h(id(cycle));
