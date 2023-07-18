@@ -54,10 +54,13 @@ SkipNode {
 					cycle -> introduceCycle(this); /* Rückwärtskante */
 				}
 			}
+			
+			checkHashtable();
 		}
 		else { /* Leaving */
 			node pred_node = pred();
 			pred_node -> concat(table);
+			table <<<<;
 		
 			node<> preds;
 			predecessors(0, preds);
@@ -83,7 +86,7 @@ SkipNode {
 			nh <<<<;
 			nh_identifier <<<<;
 			nh_rs <<<<;
-			sleep();
+			sleep(); /* TODO eventuell Sleep entfernen */
 		}
 	}
 	
@@ -634,7 +637,7 @@ SkipNode {
 	*************************************************************************************/
 	
 	/* Operation zum Ermitteln eines Knotens für Hashwert X von D. */
-	search(float X, int D, int F) {
+	search(float X, int D, int F, node V) {
 		if (X < 0 | X >= 1) {
 			print("Falsche Eingabe!");
 			return;
@@ -647,27 +650,27 @@ SkipNode {
 
 		if (pred_float < succ_float & pred_float <= X & X < succ_float) {
 			if (X < identifier) {
-				pred_node -> search(X, D, F);
+				pred_node -> search(X, D, F, V);
 			}
 			else {
-				hashtableOperation(X, D, F); /* Knoten gefunden */
+				hashtableOperation(X, D, F, V); /* Knoten gefunden */
 			}
 		}
 		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
 			if (pred_float > identifier) {
 				if (X < identifier | X >= pred_float) {
-					pred_node -> search(X, D, F);
+					pred_node -> search(X, D, F, V);
 				}
 				else {
-					hashtableOperation(X, D, F);
+					hashtableOperation(X, D, F, V);
 				}
 			}
 			else if (succ_float < identifier){
 				if (X < identifier & X >= succ_float) {
-					pred_node -> search(X, D, F);
+					pred_node -> search(X, D, F, V);
 				}
 				else {
-					hashtableOperation(X, D, F);
+					hashtableOperation(X, D, F, V);
 				}
 			}
 		}
@@ -685,7 +688,7 @@ SkipNode {
 						}
 					}
 				}
-				v -> search(X, D, F);
+				v -> search(X, D, F, V);
 			}
 			else { /* X liegt weiter links */
 				node v;
@@ -699,15 +702,15 @@ SkipNode {
 						}
 					}
 				}
-				v -> search(X, D, F);
+				v -> search(X, D, F, V);
 			}
 		}
 	}
 	
-	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen.
+	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten.
 	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle.
-	   0: Lookup, 1: Insert, 2: Delete */
-	hashtableOperation(float X, int D, int F) {
+	   0: Lookup, 1: Insert, 2: Delete, 3: Update*/
+	hashtableOperation(float X, int D, int F, node V) {
 		if (F == 0) { /* Lookup */
 			if (containts(table, X)) {
 				print(D + " ist in Knoten " + id(this) + " gespeichert");
@@ -729,21 +732,33 @@ SkipNode {
 				print(D + " befindet sich nicht in der Hashtabelle");
 			}
 		} 
+		else if (F == 3) { /* Update */
+			if (V != this) {
+				float key = g(D);
+				table[key] = D;
+				V -> removeFromHashtable(key);
+			}
+		}
 	}
 	
 	/* Prüft, ob ein Datum D in der Hashtabelle abgelegt ist */
 	lookup(int D) {
-		search(g(D), D, 0);
+		search(g(D), D, 0, this);
 	}
 	
 	/* Fügt Datum D in die Hashtabelle ein */
 	insert(int D) {
-		search(g(D), D, 1);
+		search(g(D), D, 1, this);
 	}
 	
 	/* Löscht Datum D aus der Hashtabelle */
 	delete(int D) {
-		search(g(D), D, 2);
+		search(g(D), D, 2, this);
+	}
+	
+	/* Delegiere */
+	update(int D) {
+		search(g(D), D, 3, this);
 	}
 	
 	/* Fügt einen Knoten zum Netzwerk hinzu, indem Build-Skip Protokoll ausgeführt wird */
@@ -757,10 +772,24 @@ SkipNode {
 		leaving = true;
 	}
 	
+	/* Prüft, ob Elemente aus der Hashtabelle an Knoten aus der Nachbarschaft delegiert werden müssen */
+	checkHashtable() {
+		for (float key : int value : table) {
+			update(value);
+		}
+	}
+	
 	/* Fügt alle Elemente aus T in die globale Hashtabelle ein */
 	concat([float, int] T) {
 		for (float key : int value : T) {
 			table[key] = value;
+		}
+	}
+	
+	/* Entfernt einen Eintrag zum Key X aus der Hashtabelle */
+	removeFromHashtable(float X) {
+		if (containts(table, X)) {
+			table <[X]<;
 		}
 	}
 }
