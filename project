@@ -1,7 +1,7 @@
 SkipNode {
 	float identifier; /* Hashwert von id(this) */
 	string rs; /* pseudo-random Bitstring */
-	int RS_LENGTH = 32; /* Länge des Bitstrings */
+	int RS_LENGTH = 16; /* Länge des Bitstrings */
 	node[] nh; /* Nachbarschaft von this */
 	float[] nh_identifier;
 	string[] nh_rs;
