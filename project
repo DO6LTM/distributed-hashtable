@@ -27,7 +27,7 @@ SkipNode {
 		if (!leaving) {
 			checkNeighbourhood();
 			introduceNode();
-			maxLevel = level();
+			/*maxLevel = level();*/
 			linearizeNeighbours();
 			introduceClosestNeighbours();
 			
@@ -294,6 +294,7 @@ SkipNode {
 			nh[id(X)] = X;
 			nh_identifier[id(X)] = h(id(X));
 			nh_rs[id(X)] = getBitstring(h1(id(X)));
+			maxLevel = level();
 			if (checkNode(X) == true) {
 				checkNeighbourhood();
 			}
@@ -321,7 +322,7 @@ SkipNode {
 	checkNode bool(node W) {
 		bool needed = false;
 		int i;
-		maxLevel = level();
+		/*maxLevel = level();*/
 		for (i = 0; i <= maxLevel; i++) {
 			node pR = predRange(i);
 			node sR = succRange(i);
