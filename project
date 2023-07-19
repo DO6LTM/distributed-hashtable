@@ -202,12 +202,12 @@ SkipNode {
 	/* Ermittelt den größten gemeinsamen Prefix von V und W */
 	commonPrefix int(string V, string W) {
 		int i;
-		for (i = RS_LENGTH; i > 0; i--) {
-			if (prefix(V, i) == prefix(W, i)) {
-				return i;
+		for (i = 1; i <= RS_LENGTH; i++) {
+			if (prefix(V, i) != prefix(W, i)) {
+				return i - 1;
 			}
 		}
-		return 0;
+		return RS_LENGTH;
 	}
 	
 	/* Ermittelt das aktuelle Level */
