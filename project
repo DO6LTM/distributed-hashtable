@@ -10,6 +10,14 @@ SkipNode {
 	int maxLevel;
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
+	
+	float<><> queue; /* Queue zum Verwalten von Anfragen für Combine & Split 
+						queue[0] ist der Zielhashwert; 
+						queue[1] ist das Zieldatum;
+						queue[2] ist 1, wenn Anfrage abgeschickt wurde und 0, wenn noch nicht abgeschickt wurde; 
+						queue[3] ist die Operationsflag s.u.;
+						queue[>4] speichert die Anfrageknotenidentifier */
+	int[] queue_length; /* Länge der Spalten von queue */
 
 	/* Konstruktor */
 	init() {
@@ -58,6 +66,7 @@ SkipNode {
 			}
 			
 			checkHashtable();
+			serveQueue();
 		}
 		else { /* Leaving */
 			node pred_node = pred();
@@ -798,6 +807,121 @@ SkipNode {
 	removeFromHashtable(float X) {
 		if (containts(table, X)) {
 			table <[X]<;
+		}
+	}
+	
+	/*************************************************************************************
+	
+							Funktionen für Combine & Split
+	
+	*************************************************************************************/
+	
+	/* Bedient die wartenden Combine & Split Anfragen aus der Queue */
+	serveQueue() {
+		int i;
+		for(i = 0; i < length(queue); i++) {
+			if (queue[i][0] != NaN) {
+				if (queue[i][2] != 1.0) {
+					queue[i][2] = 1.0;
+					float d_float = queue[i][1];
+					int d = round(d_float);
+					float f_float = queue[i][3];
+					int f = round(f_float);
+					
+					searchCombineAndSplit(queue[i][0], d, f, this);
+				}
+			}
+		}
+	}
+	
+	/* Fügt einen Eintrag in die Combine & Split Queue ein */
+	addToQueue(float X, int D, int F, node V) {
+		int i;
+		for (i = 0; i < length(queue); i++) {
+			if (queue[i][0] == X & queue[i][2] != 1.0) {
+				queue_length[i] = queue_length[i] + 1;
+				queue[i][queue_length[i]] = identifier;
+				return;
+			}
+		}
+		
+		i = length(queue) + 1;
+		queue[i][0] = X;
+		queue[i][1] = D * 1.0;
+		queue[i][2] = 0.0;
+		queue[i][3] = F * 1.0;
+		queue[i][4] = h(id(V));
+		queue_length[i] = 5;
+	}
+	
+	/* Operation zum Ermitteln eines Knotens für Hashwert X von D. Für Combine & Split modifiziert*/
+	searchCombineAndSplit(float X, int D, int F, node V) {
+		if (X < 0 | X >= 1) {
+			print("Falsche Eingabe!");
+			return;
+		}
+	
+		node pred_node = pred();
+		node succ_node = succ();
+		float pred_float = h(id(pred_node));
+		float succ_float = h(id(succ_node));
+
+		if (pred_float < succ_float & pred_float <= X & X < succ_float) {
+			if (X < identifier) {
+				pred_node -> addToQueue(X, D, F, V);
+			}
+			else {
+				hashtableOperation(X, D, F, V); /* Knoten gefunden */
+			}
+		}
+		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
+			if (pred_float > identifier) {
+				if (X < identifier | X >= pred_float) {
+					pred_node -> addToQueue(X, D, F, V);
+				}
+				else {
+					hashtableOperation(X, D, F, V);
+				}
+			}
+			else if (succ_float < identifier){
+				if (X < identifier & X >= succ_float) {
+					pred_node -> addToQueue(X, D, F, V);
+				}
+				else {
+					hashtableOperation(X, D, F, V);
+				}
+			}
+		}
+		else {
+			if (X > identifier) { /* X liegt weiter rechts */
+				/* Sei v der Knoten aus nh, der am nächsten an X liegt, ohne das X übersprungen wird */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (X - nh_identifier[i] < diff & nh_identifier[i] <= X) {
+							v = nh[i];
+							diff = X - nh_identifier[i];
+						}
+					}
+				}
+				v -> addToQueue(X, D, F, V);
+			}
+			else { /* X liegt weiter links */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (nh_identifier[i] - X < diff & nh_identifier[i] >= X) {
+							v = nh[i];
+							diff = nh_identifier[i] - X;
+						}
+					}
+				}
+				v -> addToQueue(X, D, F, V);
+			}
 		}
 	}
 }
