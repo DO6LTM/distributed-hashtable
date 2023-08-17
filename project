@@ -8,6 +8,7 @@ SkipNode {
 	node cycle red; /* Kreiskante auf Level 0 */
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	int maxLevel;
+	node broadcastSender;
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 	int COPIES = 3; /* Anzahl an gespeicherten Kopien eines Datums in der DHT zur Bewahrung der Redundanz */
@@ -741,6 +742,9 @@ SkipNode {
 			else if (F == 1) { /* Insert */
 				table[X] = D;
 				print(D + " in Knoten " + id(this) + " eingefuegt");
+				if (broadcastSender == V) {
+					print("BENCHMMARK STOP");
+				}
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
