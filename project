@@ -898,79 +898,83 @@ SkipNode {
 	}
 	
 	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
-	ack(float X, int D, int F, node V) {
-		int i;
-		for (i = 0; i < length(queue); i++) {
-			if (queue[i][0] == X & queue[i][1] == D * 1.0 & queue[i][2] == 1.0 & queue[i][3] == F * 1.0) {
-				int j;
-				for (j = 4; j < queue_length[i]; j++) {
-					int k;
-					for (k = 0; k < length(nh_identifier); k++) {
-						if (queue[i][j] != identifier & nh_identifier[k] + nh_identifier[k] == 2 * queue[i][j] & nh[k] != null) {
-							node return_node = nh[k];
-							return_node -> ack(X, D, F, V);
-							break;
-						}
-						else if (queue[i][j] == identifier) {
-							if (F == 0) { /* Lookup */
-								print(D + " ist in Knoten " + id(V) + " gespeichert");
+	ack(float X, int D, int F, node V, int C) {
+		if (C == COPIES) {
+			int i;
+			for (i = 0; i < length(queue); i++) {
+				if (queue[i][0] == X & queue[i][1] == D * 1.0 & queue[i][2] == 1.0 & queue[i][3] == F * 1.0) {
+					int j;
+					for (j = 4; j < queue_length[i]; j++) {
+						int k;
+						for (k = 0; k < length(nh_identifier); k++) {
+							if (queue[i][j] != identifier & nh_identifier[k] + nh_identifier[k] == 2 * queue[i][j] & nh[k] != null) {
+								node return_node = nh[k];
+								return_node -> ack(X, D, F, V, C);
+								break;
 							}
-							else if (F == 1) { /* Insert */
-								print(D + " in Knoten " + id(V) + " eingefuegt");
+							else if (queue[i][j] == identifier) {
+								if (F == 0) { /* Lookup */
+									print(D + " ist in Knoten " + id(V) + " gespeichert");
+								}
+								else if (F == 1) { /* Insert */
+									print(D + " in Knoten " + id(V) + " eingefuegt");
+								}
+								else if (F == 2) { /* Delete */
+									print(D + " aus Knoten " + id(V) + " entfernt");
+								} 
+								break;
 							}
-							else if (F == 2) { /* Delete */
-								print(D + " aus Knoten " + id(V) + " entfernt");
-							} 
-							break;
 						}
 					}
+					for (j = 0; j < queue_length[i]; j++) {
+						queue[i][j] = -1.0;
+					}
+					queue_length[i] = 0;
+					return;
 				}
-				for (j = 0; j < queue_length[i]; j++) {
-					queue[i][j] = -1.0;
-				}
-				queue_length[i] = 0;
-				return;
 			}
+			print("Fehler ist aufgetreten");
 		}
-		print("Fehler ist aufgetreten");
 	}
 	
 	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue erfolglos bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
-	nack(float X, int D, int F) {
-		int i;
-		for (i = 0; i < length(queue); i++) {
-			if (queue[i][0] == X & queue[i][1] == D * 1.0 & queue[i][2] == 1.0 & queue[i][3] == F * 1.0) {
-				int j;
-				for (j = 4; j < queue_length[i]; j++) {
-					int k;
-					for (k = 0; k < length(nh_identifier); k++) {
-						if (queue[i][j] != identifier & nh_identifier[k] + nh_identifier[k] == 2 * queue[i][j] & nh[k] != null) {
-							node return_node = nh[k];
-							return_node -> nack(X, D, F);
-							break;
-						}
-						else if (queue[i][j] == identifier) {
-							if (F == 0) { /* Lookup */
-								print(D + " befindet sich nicht in der Hashtabelle");
+	nack(float X, int D, int F, int C) {
+		if (C == COPIES) {
+			int i;
+			for (i = 0; i < length(queue); i++) {
+				if (queue[i][0] == X & queue[i][1] == D * 1.0 & queue[i][2] == 1.0 & queue[i][3] == F * 1.0) {
+					int j;
+					for (j = 4; j < queue_length[i]; j++) {
+						int k;
+						for (k = 0; k < length(nh_identifier); k++) {
+							if (queue[i][j] != identifier & nh_identifier[k] + nh_identifier[k] == 2 * queue[i][j] & nh[k] != null) {
+								node return_node = nh[k];
+								return_node -> nack(X, D, F, C);
+								break;
 							}
-							else if (F == 1) { /* Insert */
-								print(D + " befindet sich bereits in der Hashtabelle");
+							else if (queue[i][j] == identifier) {
+								if (F == 0) { /* Lookup */
+									print(D + " befindet sich nicht in der Hashtabelle");
+								}
+								else if (F == 1) { /* Insert */
+									print(D + " befindet sich bereits in der Hashtabelle");
+								}
+								else if (F == 2) { /* Delete */
+									print(D + " befindet sich nicht in der Hashtabelle");
+								} 
+								break;
 							}
-							else if (F == 2) { /* Delete */
-								print(D + " befindet sich nicht in der Hashtabelle");
-							} 
-							break;
 						}
 					}
+					for (j = 0; j < queue_length[i]; j++) {
+						queue[i][j] = -1.0;
+					}
+					queue_length[i] = 0;
+					return;
 				}
-				for (j = 0; j < queue_length[i]; j++) {
-					queue[i][j] = -1.0;
-				}
-				queue_length[i] = 0;
-				return;
 			}
+			print("Fehler ist aufgetreten");
 		}
-		print("Fehler ist aufgetreten");
 	}
 	
 	/* Operation zum Ermitteln eines Knotens für Hashwert X von D. Für Combine & Split modifiziert*/
@@ -990,7 +994,7 @@ SkipNode {
 				pred_node -> addToQueue(X, D, F, V);
 			}
 			else {
-				hashtableOperationAck(X, D, F, V); /* Knoten gefunden */
+				hashtableOperationAck(X, D, F, V, COPIES); /* Knoten gefunden */
 			}
 		}
 		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
@@ -999,7 +1003,7 @@ SkipNode {
 					pred_node -> addToQueue(X, D, F, V);
 				}
 				else {
-					hashtableOperationAck(X, D, F, V);
+					hashtableOperationAck(X, D, F, V, COPIES);
 				}
 			}
 			else if (succ_float < identifier){
@@ -1007,7 +1011,7 @@ SkipNode {
 					pred_node -> addToQueue(X, D, F, V);
 				}
 				else {
-					hashtableOperationAck(X, D, F, V);
+					hashtableOperationAck(X, D, F, V, COPIES);
 				}
 			}
 		}
@@ -1045,41 +1049,49 @@ SkipNode {
 	}
 	
 	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten. Endet mit einer Bestätigung.
-	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle.
+	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle. C ist die Anzahl an noch zu bearbeitenden Kopien.
 	   0: Lookup, 1: Insert, 2: Delete*/
-	hashtableOperationAck(float X, int D, int F, node V) {
-		if (F == 0) { /* Lookup */
-			if (containts(table, X)) {
-				ack(X, D, F, this);
+	hashtableOperationAck(float X, int D, int F, node V, int C) {
+		if (C > 0) {
+			if (F == 0) { /* Lookup */
+				if (containts(table, X)) {
+					ack(X, D, F, this, C);
+				}
+				else {
+					nack(X, D, F, C);
+				}
 			}
-			else {
-				nack(X, D, F);
+			else if (F == 1) { /* Insert */
+				if (containts(table, X)) {
+					nack(X, D, F, C);
+				}
+				else {
+					table[X] = D;
+					ack(X, D, F, this, C);
+				}
+			}
+			else if (F == 2) { /* Delete */
+				if (containts(table, X)) {
+					table <[X]<;
+					ack(X, D, F, this, C);
+				}
+				else {
+					nack(X, D, F, C);
+				}
+			} 
+			else if (F == 3) { /* Update */ /* TODO das passt noch nicht ganz */
+				if (V != this) {
+					float key = g(D);
+					table[key] = D;
+					V -> removeFromHashtable(key);
+				}
 			}
 		}
-		else if (F == 1) { /* Insert */
-			if (containts(table, X)) {
-				nack(X, D, F);
-			}
-			else {
-				table[X] = D;
-				ack(X, D, F, this);
-			}
+		else { /* Keine Kopien mehr zu bearbeiten */
+			return;
 		}
-		else if (F == 2) { /* Delete */
-			if (containts(table, X)) {
-				table <[X]<;
-				ack(X, D, F, this);
-			}
-			else {
-				nack(X, D, F);
-			}
-		} 
-		else if (F == 3) { /* Update */ /* TODO das passt noch nicht ganz */
-			if (V != this) {
-				float key = g(D);
-				table[key] = D;
-				V -> removeFromHashtable(key);
-			}
-		}
+		/* Aufruf auf nächstem Nachfolger */
+		node succNode = succ();
+		succNode -> hashtableOperationAck(X, D, F, V, C - 1);
 	}
 }
