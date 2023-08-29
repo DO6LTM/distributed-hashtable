@@ -2,9 +2,9 @@ SkipNode {
 	float identifier; /* Hashwert von id(this) */
 	string rs; /* pseudo-random Bitstring */
 	int RS_LENGTH = 16; /* Länge des Bitstrings */
-	node[] nh; /* Nachbarschaft von this */
-	float[] nh_identifier;
-	string[] nh_rs;
+	[int, node] nh; /* Nachbarschaft von this */
+	[int, float] nh_identifier;
+	[int, string] nh_rs;
 	node cycle red; /* Kreiskante auf Level 0 */
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	int maxLevel;
@@ -109,18 +109,18 @@ SkipNode {
 			if (!leaving) {
 				node pred_node = pred();
 				pred_node -> build(this);
-				nh[id(X)] = null;
-				nh_identifier[id(X)] = NaN;
-				nh_rs[id(X)] = "";
+				nh <[id(X)]<;
+				nh_identifier <[id(X)]<;
+				nh_rs <[id(X)]<;
 				cycle = null;
 			}
 		}
 		else if (F == 0) {
 			node succ_node = succ();
 			succ_node -> build(this);
-			nh[id(X)] = null;
-			nh_identifier[id(X)] = NaN;
-			nh_rs[id(X)] = "";
+			nh <[id(X)]<;
+			nh_identifier <[id(X)]<;
+			nh_rs <[id(X)]<;
 			cycle = null;
 		}
 	}
@@ -273,7 +273,7 @@ SkipNode {
 		for (node w : nh) {
 			if (w != null & w != this) {
 				if (checkNode(w) == false) {
-					nh[id(w)] = null;
+					nh <[id(w)]<;
 					int argmax = 0;
 					node max;
 					for (node x : nh) {
@@ -285,8 +285,8 @@ SkipNode {
 							}
 						}
 					}
-					nh_identifier[id(w)] = NaN;
-					nh_rs[id(w)] = "";
+					nh_identifier <[id(w)]<;
+					nh_rs <[id(w)]<;
 					max -> build(w);
 				}
 			}
@@ -310,7 +310,7 @@ SkipNode {
 				checkNeighbourhood();
 			}
 			else {
-				nh[id(X)] = null;
+				nh <[id(X)]<;
 				int argmax = 0;
 				node max;
 				for (node w : nh) {
@@ -322,8 +322,8 @@ SkipNode {
 						}
 					}
 				}
-				nh_identifier[id(X)] = NaN;
-				nh_rs[id(X)] = "";
+				nh_identifier <[id(X)]<;
+				nh_rs <[id(X)]<;
 				max -> build(X);
 			}
 		}
