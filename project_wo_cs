@@ -1,0 +1,935 @@
+SkipNode {
+	float identifier; /* Hashwert von id(this) */
+	string rs; /* pseudo-random Bitstring */
+	int RS_LENGTH = 16; /* Länge des Bitstrings */
+	node[] nh; /* Nachbarschaft von this */
+	float[] nh_identifier;
+	string[] nh_rs;
+	node cycle red; /* Kreiskante auf Level 0 */
+	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
+	int maxLevel;
+	int broadcastSender;
+	
+	[float, int] table; /* Hashtabelle zum Speichern von Daten */
+	int COPIES = 3; /* Anzahl an gespeicherten Kopien eines Datums in der DHT zur Bewahrung der Redundanz */
+
+	/* Konstruktor */
+	init() {
+		identifier = h(id(this));
+		rs = getBitstring(h1(id(this)));
+	}
+	
+	/* Wird beim Initialisieren des Knotens aufgerufen */
+	entry(node W) {
+		W -> build(this);
+	}
+	
+	/* Periodisches Timeout */
+	timeout() {
+		if (!leaving) {
+			checkNeighbourhood();
+			introduceNode();
+						linearizeNeighbours();
+			introduceClosestNeighbours();
+			
+			/* Kreiskante bauen */
+			node[] preds;
+			node[] succs;
+			predsucc(0, preds, succs);
+			node left = closestPred(0, preds);
+			node right = closestSucc(0, succs);
+			if (cycle == null) {
+				if (left == null & right != null) {
+					right -> introduceCycle(this); /* Neue Kreiskantenanfrage */
+				}
+				if (right == null & left != null) {
+					left -> introduceCycle(this);
+				}
+			}
+			if (cycle != null) {
+				float identifier_Cycle = h(id(cycle));
+				if (left != null & identifier_Cycle > identifier) {
+					left -> introduceCycle(cycle); /* Weiterleitung */
+					cycle = null;
+				}
+				if (right != null & identifier_Cycle < identifier) {
+					right -> introduceCycle(cycle);
+					cycle = null;
+				}
+				if ((left == null & identifier_Cycle > identifier) | (right == null & identifier_Cycle < identifier)) {
+					cycle -> introduceCycle(this); /* Rückwärtskante */
+				}
+			}
+			
+			checkHashtable();
+		}
+		else { /* Leaving */
+			node pred_node = pred();
+			pred_node -> concat(table);
+			table <<<<;
+		
+			node<> preds;
+			predecessors(0, preds);
+			for (node w : preds) {
+				w -> reverse(0, this);
+			}
+			
+			node<> succs;
+			successors(0, succs);
+			for (node w : succs) {
+				w -> reverse(1, this);
+			}
+			
+			if (cycle != null) {
+				if (h(id(cycle)) > identifier) {
+					cycle -> reverse(0, this);
+				}
+				else {
+					cycle -> reverse(1, this);
+				}
+				cycle = null;
+			}
+			nh <<<<;
+			nh_identifier <<<<;
+			nh_rs <<<<;
+			sleep();
+		}
+	}
+	
+	/* Funktion zum Umdrehen bzw. Löschen einer Kante nach dem FSP-Protokoll */
+	reverse(int F, node X) {
+		if (F == 1) {
+			if (!leaving) {
+				node pred_node = pred();
+				pred_node -> build(this);
+				nh[id(X)] = null;
+				nh_identifier[id(X)] = NaN;
+				nh_rs[id(X)] = "";
+				cycle = null;
+			}
+		}
+		else if (F == 0) {
+			node succ_node = succ();
+			succ_node -> build(this);
+			nh[id(X)] = null;
+			nh_identifier[id(X)] = NaN;
+			nh_rs[id(X)] = "";
+			cycle = null;
+		}
+	}
+	
+	/* Kreiskantenanfrage nach BuildCycle-Protokoll */
+	introduceCycle(node V) {
+		float identifier_V = h(id(V));
+		float identifier_Cycle = h(id(cycle));
+		if (cycle == null) {
+			node[] preds;
+			node[] succs;
+			predsucc(0, preds, succs);
+			node left = closestPred(0, preds);
+			node right = closestSucc(0, succs);
+			if ((identifier_V < identifier & right == null) | (identifier_V > identifier & left == null)) {
+				cycle = V;
+			}
+			if (identifier_V < identifier & right != null) {
+				right -> introduceCycle(V);
+			}
+			if (identifier_V > identifier & left != null) {
+				left -> introduceCycle(V);
+			}
+		}
+		else if (cycle != null) {
+			if ((identifier_V < identifier & identifier_Cycle < identifier) | (identifier_V > identifier & identifier_Cycle > identifier)) {
+				/* v liegt auf derselben Seite von u wie cycle */
+				node w1;
+				node w2;
+				if (identifier_V < identifier) {
+					/* Beide liegen links von u */
+					if (identifier_Cycle < identifier_V) {
+						/* cycle liegt weiter weg */
+						w1 = cycle;
+						w2 = V;
+					}
+					else {
+						w1 = V;
+						w2 = cycle;
+					}
+				}
+				else {
+					/* Beide liegen rechts von u */
+					if (identifier_Cycle > identifier_V) {
+						/* cycle liegt weiter weg */
+						w1 = cycle;
+						w2 = V;
+					}
+					else {
+						w1 = V;
+						w2 = cycle;
+					}
+				}
+				
+				cycle = w1;
+				this -> build(w2);
+				w1 -> build(w2);
+			}
+			else {
+				this -> build(V);
+				this -> build(cycle);
+				cycle = null;
+			}
+		}
+	}
+	
+	/* Berechnet einen Bitstring der Länge RS_LENGTH anhand des Eingabewertes H */
+	getBitstring string(float H) {
+		string bitstring = "";
+		int i;
+		for (i = 0; i < RS_LENGTH; i++) {
+			H = H * 2.0;
+			if (H > 1) {
+				bitstring = bitstring + 1;
+				H = H - 1.0;
+			}
+			else if (H < 1) {
+				bitstring = bitstring + 0;
+			}
+			else {
+				bitstring = bitstring + 0;
+				H = H / 2.0;
+			}
+		}
+		return bitstring;
+	}
+	
+	/* Gibt den Prefix der Länge I von V zurück */
+	prefix string(string V, int I) {
+		return sub_str(V, 0, I);
+	}
+	
+	/* Ermittelt den größten gemeinsamen Prefix von V und W */
+	commonPrefix int(string V, string W) {
+		int i;
+		for (i = 1; i <= RS_LENGTH; i++) {
+			if (prefix(V, i) != prefix(W, i)) {
+				return i - 1;
+			}
+		}
+		return RS_LENGTH;
+	}
+	
+	/* Ermittelt das aktuelle Level */
+	level int() {
+		int max = 0;
+		for (node w : nh) {
+			if (w != null & w != this) {
+				int tmp = commonPrefix(rs, nh_rs[id(w)]);
+				if (tmp > max) {
+					max = tmp;
+				}
+			}
+		}
+		return max;
+	}
+
+	/* Hashfunktion h, bildet I auf [0,1) ab */
+	h float(int I) {
+		float i = hash(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Hashfunktion h1, bildet I auf [0,1) ab. Wird genutzt um Bitstrings zu generieren. */
+	h1 float(int I) {
+		float i = hash1(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Hashfunktion g, bildet I auf [0,1) ab. Wird genutzt um Keys für Daten zu erstellen. */
+	g float(int I) {
+		float i = hash2(I);
+		i = i / MAX_INTEGER;
+		i = (i + 1) / 2;
+		return i;
+	}
+	
+	/* Sendet build-Anfragen an alle Nachbarknoten */
+	introduceNode() {
+		for (node w : nh) {
+			if (w != null) {
+				w -> build(this);
+			}
+		}
+	}
+	
+	/* Aktualisiert die Nachbarschaft; Entfernt ggf. w und delegiert an Knoten x mit größter Prefixübereinstimmung */
+	checkNeighbourhood() {
+		for (node w : nh) {
+			if (w != null & w != this) {
+				if (checkNode(w) == false) {
+					nh[id(w)] = null;
+					int argmax = 0;
+					node max;
+					for (node x : nh) {
+						if (x != null) {
+							int tmp = commonPrefix(nh_rs[id(w)], nh_rs[id(x)]);
+							if (argmax <= tmp) {
+								argmax = tmp;
+								max = x;
+							}
+						}
+					}
+					nh_identifier[id(w)] = NaN;
+					nh_rs[id(w)] = "";
+					max -> build(w);
+				}
+			}
+		}
+	}
+	
+	/* Fügt X in nh ein */
+	build(node X) {
+		if (X == this | X == null) {
+			return;
+		}
+		if (nh[id(X)] != null) {
+			checkNeighbourhood();
+		}
+		else {
+			nh[id(X)] = X;
+			nh_identifier[id(X)] = h(id(X));
+			nh_rs[id(X)] = getBitstring(h1(id(X)));
+			maxLevel = level();
+			if (checkNode(X) == true) {
+				checkNeighbourhood();
+			}
+			else {
+				nh[id(X)] = null;
+				int argmax = 0;
+				node max;
+				for (node w : nh) {
+					if (w != null) {
+						int tmp = commonPrefix(nh_rs[id(X)], nh_rs[id(w)]);
+						if (argmax <= tmp) {
+							argmax = tmp;
+							max = w;
+						}
+					}
+				}
+				nh_identifier[id(X)] = NaN;
+				nh_rs[id(X)] = "";
+				max -> build(X);
+			}
+		}
+	}
+	
+	/* Prüft, ob ein Knoten W in der Range von this für eine Level i liegt */
+	checkNode bool(node W) {
+		bool needed = false;
+		int i;
+		/*maxLevel = level();*/
+		for (i = 0; i <= maxLevel; i++) {
+			node pR = predRange(i);
+			node sR = succRange(i);
+			if (prefix(rs, i) == prefix(nh_rs[id(W)], i)
+				& (pR == null | nh_identifier[id(W)] >= nh_identifier[id(pR)]) 
+				& (sR == null | nh_identifier[id(W)] <= nh_identifier[id(sR)])) {
+				needed = true;
+				break;
+			}
+		}
+		return needed;
+	}
+	
+	/* Ermittelt den größten Vorgänger für Level I mit prefix * B */
+	predRangeB node(int I, string B) {
+		node<> preds;
+		predecessors(I, preds);
+		if (length(preds) < 1) {
+			return null;
+		}
+		else {
+			node argmax = null;
+			float max = 0.0;
+			int i;
+			for (i = 0; i < length(preds); i++) {
+				if (prefix(nh_rs[id(preds[i])], I + 1) == prefix(rs, I) + B & preds[i] != this & nh_identifier[id(preds[i])] >= max) {
+					argmax = preds[i];
+					max = nh_identifier[id(preds[i])];
+				}
+			}
+			return argmax;
+		}
+	}
+	
+		
+	/* Ermittelt den Vorgänger für Range von Level I */
+	predRange node(int I) {
+		node pred0 = predRangeB(I, "0");
+		node pred1 = predRangeB(I, "1");
+
+		if (pred0 == null | pred1 == null) {
+			return null;
+		}
+		
+		if (nh_identifier[id(pred0)] < nh_identifier[id(pred1)]) {
+			return pred0;
+		}
+		else {
+			return pred1;
+		}
+	}
+	
+	/* Ermittelt den kleinsten Nachfolger für Level I mit prefix * B */
+	succRangeB node(int I, string B) {
+		node<> succs;
+		successors(I, succs);
+		if (length(succs) < 1) {
+			return null;
+		}
+		else {
+			node argmin = null;
+			float min = 1.0;
+			int i;
+			for (i = 0; i < length(succs); i++) {
+				if (prefix(nh_rs[id(succs[i])], I + 1) == prefix(rs, I) + B & succs[i] != this & nh_identifier[id(succs[i])] <= min) {
+					argmin = succs[i];
+					min = nh_identifier[id(succs[i])];
+				}
+			}
+			return argmin;
+		}
+	}
+	
+	/* Ermittelt den Nachfolger für Range von Level I */
+	succRange node(int I) {
+		node succ0 = succRangeB(I, "0");
+		node succ1 = succRangeB(I, "1");
+
+		if (succ0 == null | succ1 == null) {
+			return null;
+		}
+		
+		if (nh_identifier[id(succ0)] > nh_identifier[id(succ1)]) {
+			return succ0;
+		}
+		else {
+			return succ1;
+		}
+	}
+	
+	/* Stellt den Nachbarknoten die direkten Vorgänger und Nachfolger für jedes Level vor */
+	introduceClosestNeighbours() {
+		int i;
+		node<> preds;
+		node pred_node;
+		node<> succs;
+		node succ_node;
+		for (i = 0; i <= maxLevel; i++) {
+			predsucc(i, preds, succs);
+			pred_node = closestPred(i, preds);
+			if (pred_node != null) {
+				for (node w : succs) {
+					w -> build(pred_node);
+				}
+			}
+			succs <<<<;
+			pred_node = null;
+
+			succ_node = closestSucc(i, succs);
+			if (succ_node != null) {
+				for (node w : preds) {
+					w -> build(succ_node);
+				}
+			}
+			preds <<<<;
+			succ_node = null;
+		}
+	}
+	
+	/* Linearisiere Nachbarknoten */
+	linearizeNeighbours() {
+		int i;
+		for (i = 0; i <= maxLevel; i++) {
+			node[] preds;
+			node[] succs;
+			predsucc(i, preds, succs);
+
+			sort(preds);
+			int j;
+			for (j = 0; j < length(preds) - 1; j++) {
+				node to = preds[j];
+				node m = preds[j+1];
+				to -> build(m);
+			}
+			node last = preds[length(preds) - 1];
+			last -> build(this);
+			preds <<<<;
+			
+						sort(succs);
+			for (j = length(succs) - 1; j > 0; j--) {
+				node to = succs[j];
+				node m = succs[j-1];
+				to -> build(m);
+			}
+			node first = succs[0];
+			first -> build(this);
+			succs <<<<;
+		}
+	}
+
+	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A und alle Nachfolger der Nachbarknoten für ein Level I in eine Liste B*/
+	predsucc(int I, node<> A, node<> B) {
+		A <<<<;
+		B <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
+			if (u != null & u != this) {
+				if (nh_identifier[id(u)] < identifier) {
+					A >> u;
+				}
+				else {
+					B >> u;
+				}
+			}
+		}
+	}
+	
+	/* Funktion zum Quicksort aufrufen */
+	sort(node[] A) {
+		quicksort(0, length(A)-1, A);
+	}
+	
+	/* Quicksort aufruf mit l=0 und r=length(A[I])-1 */
+	quicksort(int L, int R, node[] A) {
+		if (L < R) {
+			int m = teile(L, R, A);
+			quicksort(L, m - 1, A);
+			quicksort(m + 1, R, A);
+		}
+	}
+	
+	/* Hilfsfunktion für quicksort */
+	teile int(int L, int R, node[] A) {
+		int i = L;
+		int j = R - 1;
+		float pivot = nh_identifier[id(A[R])];
+		
+		while (i < j) {
+			while (i < j & nh_identifier[id(A[i])] <= pivot) {
+				i = i + 1;
+			}
+			
+			while (j > i & nh_identifier[id(A[j])] > pivot) {
+				j = j - 1;
+			}
+			
+			if (nh_identifier[id(A[i])] > nh_identifier[id(A[j])]) {
+				node tmp = A[i];
+				A[i] = A[j];
+				A[j] = tmp;
+			}
+		}
+		
+		if (nh_identifier[id(A[i])] > pivot) {
+			node tmp = A[i];
+			A[i] = A[R];
+			A[R] = tmp;
+		}
+		else {
+			i = R;
+		}
+		return i;
+	}
+	
+	/* Filtert alle Nachbarknoten für ein Level I in eine Liste C */
+	neighbours(int I, node<> C) {
+		C <<<<;
+		string ownPrefixI = prefix(rs, I);
+		for (node u : nh) {
+			if (u != null) {
+				if (ownPrefixI == prefix(nh_rs[id(u)], I)) {
+					C >> u;
+				}
+			}
+		}
+	}
+	
+	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste B */
+	predecessors(int I, node<> B) {
+		B <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
+			if (u != null & u != this) {
+				if (nh_identifier[id(u)] < identifier) {
+					B >> u;
+				}
+			}
+		}
+
+	}
+	
+	/* Gibt den nächsten Vorgänger für ein Level I zurück */
+	closestPred node(int I, node<> preds) {
+		node argmax;
+		float max = 0.0;
+		for (node u : preds) {
+			if (nh_identifier[id(u)] > max) {
+				argmax = u;
+				max = nh_identifier[id(u)];
+			}
+		}
+		preds <<<<;
+		return argmax;
+	}
+	
+	/* Gibt den nächsten Vorgänger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit größtem h zurück. */
+	pred node() {
+		node<> preds;
+		preds <<<<;
+		predecessors(0, preds);
+		node pred_node = closestPred(0, preds);
+		if (pred_node == null) {
+			pred_node = cycle;
+		}
+		return pred_node;
+	}
+	
+	/* Filtert alle Nachfolger der Nachbarknoten für ein Level I in eine Liste A */
+	successors(int I, node<> A) {
+		A <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
+			if (u != null & u != this) {
+				if (nh_identifier[id(u)] > identifier) {
+					A >> u;
+				}
+			}
+		}
+	}
+	
+	/* Gibt den nächsten Nachfolger für ein Level I zurück */
+	closestSucc node(int I, node<> succs) {
+		node argmin;
+		float min = 1.0;
+		for (node u : succs) {
+			if (nh_identifier[id(u)] < min) {
+				argmin = u;
+				min = nh_identifier[id(u)];
+			}
+		}
+		succs <<<<;
+		return argmin;
+	}
+	
+	/* Gibt den nächsten Nachfolger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit kleinstem h zurück. */
+	succ node() {
+		node<> succs;
+		succs <<<<;
+		successors(0, succs);
+		node succ_node = closestSucc(0, succs);
+		if (succ_node == null) {
+			succ_node = cycle;
+		}
+		return succ_node;
+	}
+	
+	/* Stelle lookup-Anfrage an Knoten X */
+	lookupNode(node X) {
+		if (id(this) == id(X)) {
+			print("Knoten " + id(X) + " gefunden!");
+		}
+		else {
+			string rs_x = getBitstring(h1(id(X)));
+			int len;
+			maxLevel = level();
+			if (maxLevel < commonPrefix(rs, rs_x)) {
+				len = maxLevel;
+			}
+			else {
+				len = commonPrefix(rs, rs_x);
+			}
+			node w = predRangeB(len, sub_str(rs_x,len,len+1));
+			if (w == null) {
+				w = succRangeB(len, sub_str(rs_x,len,len+1));
+			}
+			w -> lookupNode(X);
+		}
+	}
+	
+	/*************************************************************************************
+	
+							Funktionen zur Verwaltung der Hashtabelle
+	
+	*************************************************************************************/
+	
+	/* Operation zum Ermitteln eines Knotens für Hashwert X von D für eine Anzahl an Kopien C. */
+	search(float X, int D, int F, node V) {
+		if (X < 0 | X >= 1) {
+			print("Falsche Eingabe!");
+			return;
+		}
+	
+		node pred_node = pred();
+		node succ_node = succ();
+		float pred_float = h(id(pred_node));
+		float succ_float = h(id(succ_node));
+
+		if (pred_float < succ_float & pred_float <= X & X < succ_float) {
+			if (X < identifier) {
+				pred_node -> search(X, D, F, V);
+			}
+			else {
+				hashtableOperation(X, D, F, V, COPIES); /* Knoten gefunden */
+			}
+		}
+		else if (pred_float > succ_float & (pred_float <= X | X < succ_float)) { /* Kreiskante */
+			if (pred_float > identifier) {
+				if (X < identifier | X >= pred_float) {
+					pred_node -> search(X, D, F, V);
+				}
+				else {
+					hashtableOperation(X, D, F, V, COPIES);
+				}
+			}
+			else if (succ_float < identifier){
+				if (X < identifier & X >= succ_float) {
+					pred_node -> search(X, D, F, V);
+				}
+				else {
+					hashtableOperation(X, D, F, V, COPIES);
+				}
+			}
+		}
+		else {
+			if (X > identifier) { /* X liegt weiter rechts */
+				/* Sei v der Knoten aus nh, der am nächsten an X liegt, ohne das X übersprungen wird */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (X - nh_identifier[i] < diff & nh_identifier[i] <= X) {
+							v = nh[i];
+							diff = X - nh_identifier[i];
+						}
+					}
+				}
+				v -> search(X, D, F, V);
+			}
+			else { /* X liegt weiter links */
+				node v;
+				float diff = 1.0;
+				int i;
+				for (i = 0; i < length(nh); i++) {
+					if (nh[i] != null & nh[i] != this) {
+						if (nh_identifier[i] - X < diff & nh_identifier[i] >= X) {
+							v = nh[i];
+							diff = nh_identifier[i] - X;
+						}
+					}
+				}
+				v -> search(X, D, F, V);
+			}
+		}
+	}
+	
+	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten.
+	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle. C ist die Anzahl an restlichen zu bearbeitenden Kopien.
+	   0: Lookup, 1: Insert, 2: Delete, 3: Update */
+	hashtableOperation(float X, int D, int F, node V, int C) {
+		if (C > 0) {
+			if (F == 0) { /* Lookup */
+				if (containts(table, X)) {
+					print(D + " ist in Knoten " + id(this) + " gespeichert");
+				}
+				else {
+					print(D + " befindet sich nicht in der Hashtabelle");
+				}
+			}
+			else if (F == 1) { /* Insert */
+				if (containts(table, X)) {
+					V -> ack(X, D, F, this, C);
+					table[X] = D;
+					print(D + " in (diesem) Knoten " + id(this) + " eingefuegt");
+				}
+				else {
+					V -> nack(X, D, F, C);
+				}
+			}
+			else if (F == 2) { /* Delete */
+				if (containts(table, X)) {
+					table[X] = MIN_INTEGER;
+					print(D + " aus Knoten " + id(this) + " entfernt");
+				}
+				else {
+					print(D + " befindet sich nicht in der Hashtabelle");
+				}
+			} 
+			else if (F == 3) { /* Update Fix für selbststabilisierende Kopien*/
+				if (!containts(table, X)) {						
+					table[X] = D;
+					V -> removeFromHashtable(X);
+				}
+			}
+		}
+		else { /* Keine Kopien mehr zu bearbeiten */
+			return;
+		}
+		/* Aufruf auf nächstem Nachfolger */
+		node succNode = succ();
+		succNode -> hashtableOperation(X, D, F, V, C - 1);
+	}
+	
+	/* Prüft, ob ein Datum D in der Hashtabelle abgelegt ist */
+	lookup(int D) {
+		search(g(D), D, 0, this);
+	}
+	
+	/* Fügt Datum D in die Hashtabelle ein */
+	insert(int D) {
+		search(g(D), D, 1, this);
+	}
+	
+	/* Löscht Datum D aus der Hashtabelle */
+	delete(int D) {
+		search(g(D), D, 2, this);
+	}
+	
+	/* Delegiere */
+	update(int D) {
+		search(g(D), D, 3, this);
+	}
+	
+	/* Fügt einen Knoten zum Netzwerk hinzu, indem Build-Skip Protokoll ausgeführt wird */
+	join(node U) {
+		leaving = false;
+		U -> build(this);
+	}
+	
+	/* Sendet eine Anfrage zum Verlassen des Netzwerks */
+	leave() {
+		leaving = true;
+	}
+	
+	/* Prüft, ob Elemente aus der Hashtabelle an Knoten aus der Nachbarschaft delegiert werden müssen */
+	checkHashtable() {
+		for (float key : int value : table) {
+			if (value == MIN_INTEGER + COPIES) {
+				table <[key]<;
+			}
+			else if (value < MIN_INTEGER + COPIES) {
+				table[key] = value + 1;
+			}
+			else {
+				update(value);
+			}
+		}
+	}
+	
+	/* Fügt alle Elemente aus T in die globale Hashtabelle ein */
+	concat([float, int] T) {
+		for (float key : int value : T) {
+			table[key] = value;
+		}
+	}
+	
+	/* Entfernt einen Eintrag zum Key X aus der Hashtabelle */
+	removeFromHashtable(float X) {
+		if (containts(table, X)) {
+			table[X] = MIN_INTEGER;
+		}
+	}
+	
+	/*************************************************************************************
+	
+							Funktionen für Combine & Split
+	
+	*************************************************************************************/
+		
+	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
+	ack(float X, int D, int F, node V, int C) {
+		if (C == COPIES) {
+			if (F == 0) { /* Lookup */
+				print(D + " ist in Knoten " + id(V) + " gespeichert");
+			}
+			else if (F == 1) { /* Insert */
+				print(D + " in Knoten " + id(V) + " eingefuegt");
+				if (broadcastSender == id(this)) {
+					print("BENCHMARK STOP");
+				}
+			}
+			else if (F == 2) { /* Delete */
+				print(D + " aus Knoten " + id(V) + " entfernt");
+			}
+		}
+	}
+	
+	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue erfolglos bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
+	nack(float X, int D, int F, int C) {
+		if (C == COPIES) {
+			if (F == 0) { /* Lookup */
+				print(D + " befindet sich nicht in der Hashtabelle");
+			}
+			else if (F == 1) { /* Insert */
+				if (broadcastSender == id(this)) {
+					print("BENCHMARK STOP");
+				}
+				print(D + " befindet sich bereits in der Hashtabelle");
+			}
+			else if (F == 2) { /* Delete */
+				print(D + " befindet sich nicht in der Hashtabelle");
+			}
+		}
+	}
+	
+	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten. Endet mit einer Bestätigung.
+	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle. C ist die Anzahl an noch zu bearbeitenden Kopien.
+	   0: Lookup, 1: Insert, 2: Delete */
+	hashtableOperationAck(float X, int D, int F, node V, int C) {
+		if (C > 0) {
+			if (F == 0) { /* Lookup */
+				if (containts(table, X)) {
+					V -> ack(X, D, F, this, C);
+				}
+				else {
+					V -> nack(X, D, F, C);
+				}
+			}
+			else if (F == 1) { /* Insert */
+				if (containts(table, X)) {
+					V -> nack(X, D, F, C);
+				}
+				else {
+					table[X] = D;
+					print(D + " in (diesem) Knoten " + id(this) + " eingefuegt");
+					V -> ack(X, D, F, this, C);
+				}
+			}
+			else if (F == 2) { /* Delete */
+				if (containts(table, X)) {
+					table[X] = MIN_INTEGER;
+					V -> ack(X, D, F, this, C);
+				}
+				else {
+					V -> nack(X, D, F, C);
+				}
+			} 
+					}
+		else { /* Keine Kopien mehr zu bearbeiten */
+			return;
+		}
+		/* Aufruf auf nächstem Nachfolger */
+		node succNode = succ();
+		succNode -> hashtableOperationAck(X, D, F, V, C - 1);
+	}
+
+	setSender(int nodeID) {
+		broadcastSender = nodeID;
+	}
+}
