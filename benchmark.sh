@@ -1,1 +1,0 @@
-netsimlan project -g off -v off -a 5000
