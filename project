@@ -8,7 +8,6 @@ SkipNode {
 	node cycle red; /* Kreiskante auf Level 0 */
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	int maxLevel;
-	node broadcastSender;
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 	int COPIES = 3; /* Anzahl an gespeicherten Kopien eines Datums in der DHT zur Bewahrung der Redundanz */
@@ -37,13 +36,15 @@ SkipNode {
 		if (!leaving) {
 			checkNeighbourhood();
 			introduceNode();
-			/*maxLevel = level();*/
 			linearizeNeighbours();
 			introduceClosestNeighbours();
 			
 			/* Kreiskante bauen */
-			node left = closestPred(0);
-			node right = closestSucc(0);
+			node[] preds;
+			node[] succs;
+			predsucc(0, preds, succs);
+			node left = closestPred(0, preds);
+			node right = closestSucc(0, succs);
 			if (cycle == null) {
 				if (left == null & right != null) {
 					right -> introduceCycle(this); /* Neue Kreiskantenanfrage */
@@ -99,7 +100,7 @@ SkipNode {
 			nh <<<<;
 			nh_identifier <<<<;
 			nh_rs <<<<;
-			sleep(); /* TODO eventuell Sleep entfernen */
+			sleep();
 		}
 	}
 	
@@ -130,8 +131,11 @@ SkipNode {
 		float identifier_V = h(id(V));
 		float identifier_Cycle = h(id(cycle));
 		if (cycle == null) {
-			node left = closestPred(0);
-			node right = closestSucc(0);
+			node[] preds;
+			node[] succs;
+			predsucc(0, preds, succs);
+			node left = closestPred(0, preds);
+			node right = closestSucc(0, succs);
 			if ((identifier_V < identifier & right == null) | (identifier_V > identifier & left == null)) {
 				cycle = V;
 			}
@@ -432,8 +436,8 @@ SkipNode {
 		node<> succs;
 		node succ_node;
 		for (i = 0; i <= maxLevel; i++) {
-			successors(i, succs);
-			pred_node = closestPred(i);
+			predsucc(i, preds, succs);
+			pred_node = closestPred(i, preds);
 			if (pred_node != null) {
 				for (node w : succs) {
 					w -> build(pred_node);
@@ -442,8 +446,7 @@ SkipNode {
 			succs <<<<;
 			pred_node = null;
 
-			predecessors(i, preds);
-			succ_node = closestSucc(i);
+			succ_node = closestSucc(i, succs);
 			if (succ_node != null) {
 				for (node w : preds) {
 					w -> build(succ_node);
@@ -459,7 +462,9 @@ SkipNode {
 		int i;
 		for (i = 0; i <= maxLevel; i++) {
 			node[] preds;
-			predecessors(i, preds);
+			node[] succs;
+			predsucc(i, preds, succs);
+
 			sort(preds);
 			int j;
 			for (j = 0; j < length(preds) - 1; j++) {
@@ -471,8 +476,6 @@ SkipNode {
 			last -> build(this);
 			preds <<<<;
 			
-			node[] succs;
-			successors(i, succs);
 			sort(succs);
 			for (j = length(succs) - 1; j > 0; j--) {
 				node to = succs[j];
@@ -482,6 +485,24 @@ SkipNode {
 			node first = succs[0];
 			first -> build(this);
 			succs <<<<;
+		}
+	}
+	
+	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A und alle Nachfolger der Nachbarknoten für ein Level I in eine Liste B*/
+	predsucc(int I, node<> A, node<> B) {
+		A <<<<;
+		B <<<<;
+		node<> n;
+		neighbours(I, n);
+		for (node u : n) {
+			if (u != null & u != this) {
+				if (nh_identifier[id(u)] < identifier) {
+					A >> u;
+				}
+				else {
+					B >> u;
+				}
+			}
 		}
 	}
 	
@@ -545,7 +566,7 @@ SkipNode {
 		}
 	}
 	
-	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A */
+	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste B */
 	predecessors(int I, node<> B) {
 		B <<<<;
 		node<> n;
@@ -561,10 +582,7 @@ SkipNode {
 	}
 	
 	/* Gibt den nächsten Vorgänger für ein Level I zurück */
-	closestPred node(int I) {
-		node<> preds;
-		preds <<<<;
-		predecessors(I, preds);
+	closestPred node(int I, node<> preds) {
 		node argmax;
 		float max = 0.0;
 		for (node u : preds) {
@@ -579,7 +597,10 @@ SkipNode {
 	
 	/* Gibt den nächsten Vorgänger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit größtem h zurück. */
 	pred node() {
-		node pred_node = closestPred(0);
+		node<> preds;
+		preds <<<<;
+		predecessors(0, preds);
+		node pred_node = closestPred(0, preds);		
 		if (pred_node == null) {
 			pred_node = cycle;
 		}
@@ -601,10 +622,7 @@ SkipNode {
 	}
 	
 	/* Gibt den nächsten Nachfolger für ein Level I zurück */
-	closestSucc node(int I) {
-		node<> succs;
-		succs <<<<;
-		successors(I, succs);
+	closestSucc node(int I, node<> succs) {
 		node argmin;
 		float min = 1.0;
 		for (node u : succs) {
@@ -619,7 +637,10 @@ SkipNode {
 	
 	/* Gibt den nächsten Nachfolger bzgl. h zurück. Falls dieser nicht vorhanden ist, gebe den Knoten mit kleinstem h zurück. */
 	succ node() {
-		node succ_node = closestSucc(0);
+		node<> succs;
+		succs <<<<;
+		successors(0, succs);
+		node succ_node = closestSucc(0, succs);
 		if (succ_node == null) {
 			succ_node = cycle;
 		}
@@ -742,13 +763,10 @@ SkipNode {
 			else if (F == 1) { /* Insert */
 				table[X] = D;
 				print(D + " in Knoten " + id(this) + " eingefuegt");
-				if (broadcastSender == V) {
-					print("BENCHMMARK STOP");
-				}
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
-					table <[X]<;
+					table[X] = MIN_INTEGER;
 					print(D + " aus Knoten " + id(this) + " entfernt");
 				}
 				else {
@@ -756,10 +774,9 @@ SkipNode {
 				}
 			} 
 			else if (F == 3) { /* Update Fix für selbststabilisierende Kopien*/
-				if (!containts(table, X)) {						
-					float key = g(D);
-					table[key] = D;
-					V -> removeFromHashtable(key);
+				if (!containts(table, X)) {		
+					table[X] = D;
+					V -> removeFromHashtable(X);
 				}
 			}
 		}
@@ -805,7 +822,15 @@ SkipNode {
 	/* Prüft, ob Elemente aus der Hashtabelle an Knoten aus der Nachbarschaft delegiert werden müssen */
 	checkHashtable() {
 		for (float key : int value : table) {
-			update(value); /* TODO Für Combine And Split anpassen */
+			if (value == MIN_INTEGER + COPIES) {
+				table <[key]<;
+			}
+			else if (value < MIN_INTEGER + COPIES) {
+				table[key] = value + 1;
+			}
+			else {
+				update(value);
+			}
 		}
 	}
 	
@@ -819,7 +844,7 @@ SkipNode {
 	/* Entfernt einen Eintrag zum Key X aus der Hashtabelle */
 	removeFromHashtable(float X) {
 		if (containts(table, X)) {
-			table <[X]<;
+			table[X] = MIN_INTEGER;
 		}
 	}
 	
@@ -896,11 +921,6 @@ SkipNode {
 		addToQueue(g(D), D, 2, this);
 	}
 	
-	/* Löscht Datum D aus der Hashtabelle */
-	updateQueue(int D) {
-		addToQueue(g(D), D, 3, this);
-	}
-	
 	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
 	ack(float X, int D, int F, node V, int C) {
 		if (C == COPIES) {
@@ -925,7 +945,7 @@ SkipNode {
 								}
 								else if (F == 2) { /* Delete */
 									print(D + " aus Knoten " + id(V) + " entfernt");
-								} 
+								}
 								break;
 							}
 						}
@@ -1076,20 +1096,13 @@ SkipNode {
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
-					table <[X]<;
+					table[X] = MIN_INTEGER;
 					ack(X, D, F, this, C);
 				}
 				else {
 					nack(X, D, F, C);
 				}
 			} 
-			else if (F == 3) { /* Update */ /* TODO das passt noch nicht ganz */
-				if (V != this) {
-					float key = g(D);
-					table[key] = D;
-					V -> removeFromHashtable(key);
-				}
-			}
 		}
 		else { /* Keine Kopien mehr zu bearbeiten */
 			return;
