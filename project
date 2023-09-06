@@ -766,7 +766,7 @@ SkipNode {
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
-					table <[X]<;
+					table[X] = MIN_INTEGER;
 					print(D + " aus Knoten " + id(this) + " entfernt");
 				}
 				else {
@@ -774,10 +774,9 @@ SkipNode {
 				}
 			} 
 			else if (F == 3) { /* Update Fix für selbststabilisierende Kopien*/
-				if (!containts(table, X)) {						
-					float key = g(D);
-					table[key] = D;
-					V -> removeFromHashtable(key);
+				if (!containts(table, X)) {		
+					table[X] = D;
+					V -> removeFromHashtable(X);
 				}
 			}
 		}
@@ -823,7 +822,15 @@ SkipNode {
 	/* Prüft, ob Elemente aus der Hashtabelle an Knoten aus der Nachbarschaft delegiert werden müssen */
 	checkHashtable() {
 		for (float key : int value : table) {
-			update(value);
+			if (value == MIN_INTEGER + COPIES) {
+				table <[key]<;
+			}
+			else if (value < MIN_INTEGER + COPIES) {
+				table[key] = value + 1;
+			}
+			else {
+				update(value);
+			}
 		}
 	}
 	
@@ -837,7 +844,7 @@ SkipNode {
 	/* Entfernt einen Eintrag zum Key X aus der Hashtabelle */
 	removeFromHashtable(float X) {
 		if (containts(table, X)) {
-			table <[X]<;
+			table[X] = MIN_INTEGER;
 		}
 	}
 	
@@ -1089,7 +1096,7 @@ SkipNode {
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
-					table <[X]<;
+					table[X] = MIN_INTEGER;
 					ack(X, D, F, this, C);
 				}
 				else {

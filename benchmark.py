@@ -7,7 +7,7 @@ import random
 import os
 
 PORT = 5000
-SIZE = 100 # Anzahl an Knoten
+SIZE = 5 # Anzahl an Knoten
 
 def raw_api_query(reader, writer, command):
     """
