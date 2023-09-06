@@ -749,7 +749,7 @@ SkipNode {
 	
 	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten.
 	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle. C ist die Anzahl an restlichen zu bearbeitenden Kopien.
-	   0: Lookup, 1: Insert, 2: Delete, 3: Update*/
+	   0: Lookup, 1: Insert, 2: Delete, 3: Update, 4: Kopien*/
 	hashtableOperation(float X, int D, int F, node V, int C) {
 		if (C > 0) {
 			if (F == 0) { /* Lookup */
@@ -779,13 +779,23 @@ SkipNode {
 					V -> removeFromHashtable(X);
 				}
 			}
+			else if (F == 4) { /* Für das Einfügen der Kopien */
+				if (!containts(table, X)) {		
+					table[X] = D;
+				}
+			}
 		}
 		else { /* Keine Kopien mehr zu bearbeiten */
 			return;
 		}
 		/* Aufruf auf nächstem Nachfolger */
 		node succNode = succ();
-		succNode -> hashtableOperation(X, D, F, V, C - 1);
+		if (F != 3) {
+			succNode -> hashtableOperation(X, D, F, V, C - 1);
+		}
+		else {
+			succNode -> hashtableOperation(X, D, 4, V, C - 1);
+		}
 	}
 	
 	/* Prüft, ob ein Datum D in der Hashtabelle abgelegt ist */
