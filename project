@@ -8,6 +8,7 @@ SkipNode {
 	node cycle red; /* Kreiskante auf Level 0 */
 	bool leaving = false; /* Wenn leaving auf true ist, wird die selbststabilisierung gestoppt */
 	int maxLevel;
+	int broadcastSender;
 	
 	[float, int] table; /* Hashtabelle zum Speichern von Daten */
 	int COPIES = 3; /* Anzahl an gespeicherten Kopien eines Datums in der DHT zur Bewahrung der Redundanz */
@@ -36,7 +37,7 @@ SkipNode {
 		if (!leaving) {
 			checkNeighbourhood();
 			introduceNode();
-			linearizeNeighbours();
+						linearizeNeighbours();
 			introduceClosestNeighbours();
 			
 			/* Kreiskante bauen */
@@ -476,7 +477,7 @@ SkipNode {
 			last -> build(this);
 			preds <<<<;
 			
-			sort(succs);
+						sort(succs);
 			for (j = length(succs) - 1; j > 0; j--) {
 				node to = succs[j];
 				node m = succs[j-1];
@@ -487,7 +488,7 @@ SkipNode {
 			succs <<<<;
 		}
 	}
-	
+
 	/* Filtert alle Vorgänger der Nachbarknoten für ein Level I in eine Liste A und alle Nachfolger der Nachbarknoten für ein Level I in eine Liste B*/
 	predsucc(int I, node<> A, node<> B) {
 		A <<<<;
@@ -600,7 +601,7 @@ SkipNode {
 		node<> preds;
 		preds <<<<;
 		predecessors(0, preds);
-		node pred_node = closestPred(0, preds);		
+		node pred_node = closestPred(0, preds);
 		if (pred_node == null) {
 			pred_node = cycle;
 		}
@@ -749,7 +750,7 @@ SkipNode {
 	
 	/* Wird nach dem Fund eines Knotens mit Key X und Value D aufgerufen. V ist der Urpsrungsknoten.
 	   Die Angabe einer Flag F erlaubt eine Operation auf der Hashtabelle. C ist die Anzahl an restlichen zu bearbeitenden Kopien.
-	   0: Lookup, 1: Insert, 2: Delete, 3: Update*/
+	   0: Lookup, 1: Insert, 2: Delete, 3: Update */
 	hashtableOperation(float X, int D, int F, node V, int C) {
 		if (C > 0) {
 			if (F == 0) { /* Lookup */
@@ -762,7 +763,12 @@ SkipNode {
 			}
 			else if (F == 1) { /* Insert */
 				table[X] = D;
-				print(D + " in Knoten " + id(this) + " eingefuegt");
+				print(D + " in (diesem) Knoten " + id(this) + " eingefuegt");
+				if (broadcastSender == id(this)) {
+					print("BENCHMARK STOP");
+				} else {
+					print("Hinterlegter Knoten: " + broadcastSender + " Sender ID: " + id(V));
+				}
 			}
 			else if (F == 2) { /* Delete */
 				if (containts(table, X)) {
@@ -774,7 +780,7 @@ SkipNode {
 				}
 			} 
 			else if (F == 3) { /* Update Fix für selbststabilisierende Kopien*/
-				if (!containts(table, X)) {		
+				if (!containts(table, X)) {						
 					table[X] = D;
 					V -> removeFromHashtable(X);
 				}
@@ -920,7 +926,7 @@ SkipNode {
 	deleteQueue(int D) {
 		addToQueue(g(D), D, 2, this);
 	}
-	
+		
 	/* Erhält eine Bestätigung, dass eine Anfrage aus der Queue bearbeitet wurde. Leert die entsprechenden Einträge aus der Queue und sendet Anfragen weiter zurück */
 	ack(float X, int D, int F, node V, int C) {
 		if (C == COPIES) {
@@ -942,10 +948,13 @@ SkipNode {
 								}
 								else if (F == 1) { /* Insert */
 									print(D + " in Knoten " + id(V) + " eingefuegt");
+									if (broadcastSender == id(this)) {
+										print("BENCHMARK STOP");
+									}
 								}
 								else if (F == 2) { /* Delete */
 									print(D + " aus Knoten " + id(V) + " entfernt");
-								}
+								} 
 								break;
 							}
 						}
@@ -981,6 +990,9 @@ SkipNode {
 									print(D + " befindet sich nicht in der Hashtabelle");
 								}
 								else if (F == 1) { /* Insert */
+									if (broadcastSender == id(this)) {
+										print("BENCHMARK STOP");
+									}
 									print(D + " befindet sich bereits in der Hashtabelle");
 								}
 								else if (F == 2) { /* Delete */
@@ -1091,6 +1103,7 @@ SkipNode {
 				}
 				else {
 					table[X] = D;
+					print(D + " in (diesem) Knoten " + id(this) + " eingefuegt");
 					ack(X, D, F, this, C);
 				}
 			}
@@ -1103,12 +1116,16 @@ SkipNode {
 					nack(X, D, F, C);
 				}
 			} 
-		}
+					}
 		else { /* Keine Kopien mehr zu bearbeiten */
 			return;
 		}
 		/* Aufruf auf nächstem Nachfolger */
 		node succNode = succ();
 		succNode -> hashtableOperationAck(X, D, F, V, C - 1);
+	}
+
+	setSender(int nodeID) {
+		broadcastSender = nodeID;
 	}
 }
